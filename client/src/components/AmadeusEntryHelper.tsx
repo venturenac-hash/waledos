@@ -10,15 +10,13 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "sonner";
-import { airports } from "@/lib/airport-codes";
 import { 
   Passenger, ContactInfo, FlightSegment,
   generateANCommand, generateNMCommand, 
   generateBlock4Commands, packages
 } from "@/lib/command-generator";
+import { AirportSelector } from "./AirportSelector";
 
 // Extended Passenger Interface for UI State
 interface ExtendedPassenger extends Passenger {
@@ -36,10 +34,6 @@ export default function AmadeusEntryHelper() {
     { id: "1", date: new Date(), from: "", to: "" }, // Outbound
     { id: "2", date: new Date(), from: "", to: "" }  // Return (optional initially, but standard is round trip)
   ]);
-  // We'll manage segments as an array. 
-  // UI Requirement: "Outbound and Return in one block". 
-  // Multi-city request: "Add more than 2 destinations".
-  // So we start with 2 segments (Outbound, Return). User can add more.
 
   // Helper for date input (string <-> Date)
   const getDateStr = (date?: Date) => date ? format(date, "yyyy-MM-dd") : "";
@@ -75,16 +69,6 @@ export default function AmadeusEntryHelper() {
     paxCount: 1
   });
   const [block4Commands, setBlock4Commands] = useState("");
-
-  // --- Helpers ---
-  const filterAirports = (query: string) => {
-    if (!query) return [];
-    return airports.filter(a => 
-      a.code.toLowerCase().startsWith(query.toLowerCase()) ||
-      a.cityAr.includes(query) ||
-      a.cityEn.toLowerCase().includes(query.toLowerCase())
-    ).slice(0, 5);
-  };
 
   const copyToClipboard = (text: string, stepIndex: number) => {
     if (!text) {
@@ -149,21 +133,9 @@ export default function AmadeusEntryHelper() {
   };
 
   const reverseRoute = (index: number) => {
-    if (index > 0) {
-      // Usually reverse means swap from/to of THIS segment? 
-      // Or swap with previous? 
-      // Let's assume swap From/To of current segment
-      const seg = segments[index];
-      updateSegment(index, "from", seg.to);
-      updateSegment(index, "to", seg.from);
-    } else if (segments.length >= 2) {
-      // If it's the first segment, maybe swap with second?
-      // Standard "Reverse" button usually swaps Outbound/Return locations
-      // Let's keep it simple: Swap From/To of current segment
-      const seg = segments[index];
-      updateSegment(index, "from", seg.to);
-      updateSegment(index, "to", seg.from);
-    }
+    const seg = segments[index];
+    updateSegment(index, "from", seg.to);
+    updateSegment(index, "to", seg.from);
   };
 
   // Passenger Handlers
@@ -209,9 +181,6 @@ export default function AmadeusEntryHelper() {
       if (selectedPax) {
         newPax[index].infantLastName = selectedPax.lastName;
       }
-    } else {
-      // If manual, we keep whatever was typed or clear it? 
-      // Let's keep it, user can edit.
     }
     setPassengers(newPax);
   };
@@ -266,45 +235,19 @@ export default function AmadeusEntryHelper() {
                   </div>
                   <div className="col-span-4">
                     <Label className="text-[9px] text-white/50 mb-1 block">من</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full justify-start text-right font-normal glass-input h-7 text-xs px-2 truncate">
-                          {seg.from || "المغادرة"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="p-0 w-[180px]">
-                        <div className="p-2">
-                          <ScrollArea className="h-[120px]">
-                            {filterAirports("").map(a => (
-                              <div key={a.code} className="p-1.5 hover:bg-secondary/20 cursor-pointer rounded text-xs" onClick={() => updateSegment(idx, "from", a.code)}>
-                                <span className="font-bold">{a.code}</span> - {a.cityAr}
-                              </div>
-                            ))}
-                          </ScrollArea>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+                    <AirportSelector 
+                      value={seg.from} 
+                      onChange={(val) => updateSegment(idx, "from", val)} 
+                      placeholder="المغادرة"
+                    />
                   </div>
                   <div className="col-span-4">
                     <Label className="text-[9px] text-white/50 mb-1 block">إلى</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" className="w-full justify-start text-right font-normal glass-input h-7 text-xs px-2 truncate">
-                          {seg.to || "الوصول"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="p-0 w-[180px]">
-                        <div className="p-2">
-                          <ScrollArea className="h-[120px]">
-                            {filterAirports("").map(a => (
-                              <div key={a.code} className="p-1.5 hover:bg-secondary/20 cursor-pointer rounded text-xs" onClick={() => updateSegment(idx, "to", a.code)}>
-                                <span className="font-bold">{a.code}</span> - {a.cityAr}
-                              </div>
-                            ))}
-                          </ScrollArea>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
+                    <AirportSelector 
+                      value={seg.to} 
+                      onChange={(val) => updateSegment(idx, "to", val)} 
+                      placeholder="الوصول"
+                    />
                   </div>
                 </div>
                 
@@ -461,7 +404,7 @@ export default function AmadeusEntryHelper() {
                       </div>
                       <div className="col-span-4">
                         <Label className="text-[9px] text-white/50">جنس الرضيع</Label>
-                        <Select value={pax.infantGender || "M"} onValueChange={(v) => updatePax(idx, "infantGender", v)}>
+                        <Select value={pax.infantGender || "M"} onValueChange={(v: any) => updatePax(idx, "infantGender", v)}>
                           <SelectTrigger className="glass-input h-7 text-xs">
                             <SelectValue />
                           </SelectTrigger>
