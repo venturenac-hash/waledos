@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Search, Plane, AlertTriangle, BookOpen, Copy, Check, Menu, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search, Plane, AlertTriangle, BookOpen, Copy, Check, Menu, X, Star, Trash2 } from "lucide-react";
 import { airports, Airport } from "@/lib/airport-codes";
 import { bookingSteps, commonErrors, shortcuts } from "@/lib/booking-data";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,32 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("booking");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [favorites, setFavorites] = useState<{ type: 'code' | 'command', value: string, label: string }[]>([]);
+
+  useEffect(() => {
+    const savedFavorites = localStorage.getItem("amadeus_favorites");
+    if (savedFavorites) {
+      setFavorites(JSON.parse(savedFavorites));
+    }
+  }, []);
+
+  const toggleFavorite = (type: 'code' | 'command', value: string, label: string) => {
+    const exists = favorites.find(f => f.value === value && f.type === type);
+    let newFavorites;
+    if (exists) {
+      newFavorites = favorites.filter(f => !(f.value === value && f.type === type));
+      toast.success("تم الحذف من المفضلة");
+    } else {
+      newFavorites = [...favorites, { type, value, label }];
+      toast.success("تم الإضافة للمفضلة");
+    }
+    setFavorites(newFavorites);
+    localStorage.setItem("amadeus_favorites", JSON.stringify(newFavorites));
+  };
+
+  const isFavorite = (type: 'code' | 'command', value: string) => {
+    return favorites.some(f => f.value === value && f.type === type);
+  };
 
   const filteredAirports = airports.filter((airport) =>
     airport.cityAr.includes(searchQuery) ||
@@ -52,6 +78,9 @@ export default function Home() {
             <Button variant="ghost" onClick={() => setActiveTab("booking")} className={cn("text-white hover:bg-white/10", activeTab === "booking" && "bg-white/10")}>خطوات الحجز</Button>
             <Button variant="ghost" onClick={() => setActiveTab("codes")} className={cn("text-white hover:bg-white/10", activeTab === "codes" && "bg-white/10")}>رموز المطارات</Button>
             <Button variant="ghost" onClick={() => setActiveTab("errors")} className={cn("text-white hover:bg-white/10", activeTab === "errors" && "bg-white/10")}>حل المشاكل</Button>
+            <Button variant="ghost" onClick={() => setActiveTab("favorites")} className={cn("text-white hover:bg-white/10 gap-2", activeTab === "favorites" && "bg-white/10")}>
+              <Star className="w-4 h-4 text-yellow-400" /> المفضلة
+            </Button>
           </div>
 
           {/* Mobile Menu Toggle */}
@@ -66,6 +95,7 @@ export default function Home() {
             <Button variant="ghost" onClick={() => { setActiveTab("booking"); setIsMenuOpen(false); }} className="justify-start text-white">خطوات الحجز</Button>
             <Button variant="ghost" onClick={() => { setActiveTab("codes"); setIsMenuOpen(false); }} className="justify-start text-white">رموز المطارات</Button>
             <Button variant="ghost" onClick={() => { setActiveTab("errors"); setIsMenuOpen(false); }} className="justify-start text-white">حل المشاكل</Button>
+            <Button variant="ghost" onClick={() => { setActiveTab("favorites"); setIsMenuOpen(false); }} className="justify-start text-white gap-2"><Star className="w-4 h-4 text-yellow-400" /> المفضلة</Button>
           </div>
         )}
       </nav>
@@ -94,9 +124,14 @@ export default function Home() {
                   <CardContent>
                     <div className="bg-black/30 rounded-lg p-3 border border-white/5 flex justify-between items-center group-hover:border-primary/30 transition-colors">
                       <code className="font-mono text-secondary text-lg">{step.command}</code>
-                      <Button size="icon" variant="ghost" className="h-8 w-8 text-white/50 hover:text-white" onClick={() => copyToClipboard(step.command)}>
-                        <Copy className="w-4 h-4" />
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button size="icon" variant="ghost" className="h-8 w-8 text-white/50 hover:text-white" onClick={() => copyToClipboard(step.command)}>
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className={cn("h-8 w-8 hover:text-yellow-400", isFavorite('command', step.command) ? "text-yellow-400" : "text-white/50")} onClick={() => toggleFavorite('command', step.command, step.title)}>
+                          <Star className={cn("w-4 h-4", isFavorite('command', step.command) && "fill-current")} />
+                        </Button>
+                      </div>
                     </div>
                     <p className="text-xs text-white/40 mt-2 font-mono dir-ltr text-right">{step.example}</p>
                   </CardContent>
@@ -151,9 +186,14 @@ export default function Home() {
                     </div>
                     <div className="flex flex-col items-end gap-2">
                       <span className="text-2xl font-black font-mono text-secondary tracking-wider">{airport.code}</span>
-                      <Button size="icon" variant="ghost" className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => copyToClipboard(airport.code)}>
-                        <Copy className="w-3 h-3" />
-                      </Button>
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button size="icon" variant="ghost" className="h-6 w-6 text-white/50 hover:text-white" onClick={() => copyToClipboard(airport.code)}>
+                          <Copy className="w-3 h-3" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className={cn("h-6 w-6 hover:text-yellow-400", isFavorite('code', airport.code) ? "text-yellow-400" : "text-white/50")} onClick={() => toggleFavorite('code', airport.code, airport.cityAr)}>
+                          <Star className={cn("w-3 h-3", isFavorite('code', airport.code) && "fill-current")} />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -164,6 +204,46 @@ export default function Home() {
                 )}
               </div>
             </ScrollArea>
+          </TabsContent>
+
+          {/* Favorites Tab */}
+          <TabsContent value="favorites" className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
+            <div className="text-center mb-10">
+              <h2 className="text-3xl font-bold mb-2 text-yellow-400">المفضلة</h2>
+              <p className="text-white/60">الوصول السريع للأوامر والرموز المحفوظة</p>
+            </div>
+
+            {favorites.length === 0 ? (
+              <div className="text-center py-20 glass rounded-2xl border border-white/10">
+                <Star className="w-16 h-16 text-white/20 mx-auto mb-4" />
+                <p className="text-xl text-white/50">لم تقم بإضافة أي عناصر للمفضلة بعد</p>
+                <p className="text-sm text-white/30 mt-2">اضغط على أيقونة النجمة بجانب أي أمر أو رمز لإضافته هنا</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {favorites.map((fav, idx) => (
+                  <div key={idx} className="glass p-4 rounded-xl flex justify-between items-center hover:bg-white/5 transition-colors group">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={cn("text-xs px-2 py-0.5 rounded-full border", fav.type === 'code' ? "bg-blue-500/20 border-blue-500/30 text-blue-300" : "bg-purple-500/20 border-purple-500/30 text-purple-300")}>
+                          {fav.type === 'code' ? 'مطار' : 'أمر'}
+                        </span>
+                        <h3 className="font-bold text-white/90">{fav.label}</h3>
+                      </div>
+                      <code className="font-mono text-secondary text-lg block mt-1">{fav.value}</code>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button size="icon" variant="ghost" className="h-8 w-8 text-white/50 hover:text-white" onClick={() => copyToClipboard(fav.value)}>
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                      <Button size="icon" variant="ghost" className="h-8 w-8 text-red-400/50 hover:text-red-400 hover:bg-red-400/10" onClick={() => toggleFavorite(fav.type, fav.value, fav.label)}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           {/* Errors Tab */}
