@@ -11,7 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
-import { AmadeusEntryHelper } from "@/components/AmadeusEntryHelper";
+import AmadeusEntryHelper from "@/components/AmadeusEntryHelper";
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
