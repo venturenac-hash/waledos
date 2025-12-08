@@ -1,129 +1,92 @@
 import { useState, useEffect } from "react";
-import { format, parseISO, differenceInYears, isBefore, addYears } from "date-fns";
-import { 
-  Plane, User, Phone, Copy, Plus, Trash2, 
-  ArrowRightLeft, Check, AlertCircle, Calendar
-} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Copy, Plus, Trash2, ArrowRightLeft, Plane, User, Phone, FileText, CheckCircle2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { format, addDays, differenceInMonths, differenceInYears } from "date-fns";
 import { 
-  Passenger, ContactInfo, FlightSegment,
-  generateANCommand, generateNMCommand, 
-  generateBlock4Commands, packages
+  generateANCommand, 
+  generateNMCommand, 
+  generateBlock4Commands, 
+  packages,
+  Passenger,
+  FlightSegment,
+  ContactInfo
 } from "@/lib/command-generator";
 import { AirportSelector } from "./AirportSelector";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-// Extended Passenger Interface for UI State
-interface ExtendedPassenger extends Passenger {
-  infantLastNameSelection?: "MANUAL" | string; // "MANUAL" or passenger ID to copy last name from
-}
-
-export default function AmadeusEntryHelper() {
+export function AmadeusEntryHelper() {
   // --- State ---
-  
-  // Progress Steps (1-5)
-  const [completedSteps, setCompletedSteps] = useState<number[]>([]);
-
-  // Block 1: Flights (Multi-City)
   const [segments, setSegments] = useState<FlightSegment[]>([
-    { id: "1", date: new Date(), from: "", to: "" }, // Outbound
-    { id: "2", date: new Date(), from: "", to: "" }  // Return (optional initially, but standard is round trip)
+    { id: "1", date: new Date(), from: "", to: "" },
+    { id: "2", date: addDays(new Date(), 7), from: "", to: "" } // Return flight
   ]);
 
-  // Helper for date input (string <-> Date)
-  const getDateStr = (date?: Date) => date ? format(date, "yyyy-MM-dd") : "";
-  const setSegmentDate = (index: number, dateStr: string) => {
-    const newSegments = [...segments];
-    if (dateStr) {
-      const newDate = parseISO(dateStr);
-      newSegments[index].date = newDate;
-      
-      // Validation: Check if date is before previous segment
-      if (index > 0 && newSegments[index-1].date && isBefore(newDate, newSegments[index-1].date)) {
-        toast.error("تنبيه: تاريخ هذه الرحلة قبل الرحلة السابقة!");
-      }
-    }
-    setSegments(newSegments);
-  };
-
-  // Block 3: Passengers
-  const [passengers, setPassengers] = useState<ExtendedPassenger[]>([
+  const [passengers, setPassengers] = useState<Passenger[]>([
     { 
-      id: "1", firstName: "", lastName: "", title: "MR", 
-      nationality: "SAU", birthPlace: "SAU", docType: "I", gender: "M",
-      infantLastNameSelection: "MANUAL", infantGender: "M"
+      id: "1", 
+      firstName: "", 
+      lastName: "", 
+      title: "MR", 
+      hasInfant: false,
+      nationality: "SAU",
+      birthPlace: "SAU",
+      docType: "I"
     }
   ]);
-  const [nmCommands, setNmCommands] = useState("");
 
-  // Block 4: Contact + Docs
   const [contact, setContact] = useState<ContactInfo>({
     mobile: "",
     email: "",
     language: "AR",
     paxCount: 1
   });
-  const [block4Commands, setBlock4Commands] = useState("");
 
-  const copyToClipboard = (text: string, stepIndex: number) => {
+  const [activeStep, setActiveStep] = useState(1);
+
+  // --- Effects for Automation ---
+
+  // Auto-fill Return Flight (Block 1 -> Block 2)
+  useEffect(() => {
+    if (segments[0].from && segments[0].to && !segments[1].from && !segments[1].to) {
+      const newSegments = [...segments];
+      newSegments[1].from = segments[0].to;
+      newSegments[1].to = segments[0].from;
+      setSegments(newSegments);
+    }
+  }, [segments[0].from, segments[0].to]);
+
+  // Auto-fill Last Name for new passengers
+  useEffect(() => {
+    if (passengers.length > 1) {
+      const lastPax = passengers[passengers.length - 1];
+      const prevPax = passengers[passengers.length - 2];
+      if (!lastPax.lastName && prevPax.lastName) {
+        const newPax = [...passengers];
+        newPax[newPax.length - 1].lastName = prevPax.lastName;
+        setPassengers(newPax);
+      }
+    }
+  }, [passengers.length]);
+
+  // Update paxCount in contact info
+  useEffect(() => {
+    setContact(prev => ({ ...prev, paxCount: passengers.length }));
+  }, [passengers.length]);
+
+  // --- Handlers ---
+
+  const handleCopy = (text: string, label: string) => {
     if (!text) {
-      toast.error("البيانات غير مكتملة");
+      toast.error("لا توجد بيانات للنسخ");
       return;
     }
     navigator.clipboard.writeText(text);
-    toast.success("تم النسخ بنجاح");
-    
-    if (!completedSteps.includes(stepIndex)) {
-      setCompletedSteps([...completedSteps, stepIndex]);
-    }
-  };
-
-  // --- Effects ---
-
-  // Generate NM & Block 4
-  useEffect(() => {
-    const validPax = passengers.filter(p => p.firstName && p.lastName);
-    
-    // NM
-    if (validPax.length > 0) {
-      setNmCommands(generateNMCommand(validPax));
-    } else {
-      setNmCommands("");
-    }
-
-    // Block 4
-    const hasContact = contact.mobile || contact.email;
-    const hasDocs = validPax.some(p => p.docNumber);
-    
-    if (hasContact || hasDocs) {
-      const effectiveContact = { ...contact, paxCount: validPax.length > 0 ? validPax.length : 1 };
-      setBlock4Commands(generateBlock4Commands(effectiveContact, validPax));
-    } else {
-      setBlock4Commands("");
-    }
-  }, [passengers, contact]);
-
-  // --- Handlers ---
-  
-  // Flight Handlers
-  const addSegment = () => {
-    setSegments([...segments, { 
-      id: (segments.length + 1).toString(), 
-      date: new Date(), from: "", to: "" 
-    }]);
-  };
-
-  const removeSegment = (index: number) => {
-    if (segments.length > 1) {
-      const newSegments = [...segments];
-      newSegments.splice(index, 1);
-      setSegments(newSegments);
-    }
+    toast.success(`تم نسخ ${label}`);
   };
 
   const updateSegment = (index: number, field: keyof FlightSegment, value: any) => {
@@ -132,280 +95,306 @@ export default function AmadeusEntryHelper() {
     setSegments(newSegments);
   };
 
-  const reverseRoute = (index: number) => {
-    const seg = segments[index];
-    updateSegment(index, "from", seg.to);
-    updateSegment(index, "to", seg.from);
+  const updatePassenger = (index: number, field: keyof Passenger, value: any) => {
+    const newPax = [...passengers];
+    newPax[index] = { ...newPax[index], [field]: value };
+    setPassengers(newPax);
   };
 
-  // Passenger Handlers
   const addPassenger = () => {
-    setPassengers([...passengers, { 
-      id: (passengers.length + 1).toString(), 
-      firstName: "", lastName: "", title: "MR",
-      nationality: "SAU", birthPlace: "SAU", docType: "I", gender: "M",
-      infantLastNameSelection: "MANUAL", infantGender: "M"
-    }]);
+    setPassengers([
+      ...passengers,
+      { 
+        id: Math.random().toString(), 
+        firstName: "", 
+        lastName: passengers.length > 0 ? passengers[0].lastName : "", 
+        title: "MR", 
+        hasInfant: false,
+        nationality: "SAU",
+        birthPlace: "SAU",
+        docType: "I"
+      }
+    ]);
   };
 
   const removePassenger = (index: number) => {
-    if (passengers.length > 1) {
-      const newPax = [...passengers];
-      newPax.splice(index, 1);
-      setPassengers(newPax);
-    }
-  };
-
-  const updatePax = (index: number, field: keyof ExtendedPassenger, value: any) => {
-    const newPax = [...passengers];
-    newPax[index] = { ...newPax[index], [field]: value };
-    
-    // Infant Age Validation
-    if (field === "infantDob" && value && segments[0].date) {
-      const age = differenceInYears(segments[0].date, value);
-      if (age >= 2) {
-        toast.error("تنبيه: عمر الرضيع يجب أن يكون أقل من سنتين!");
-      }
-    }
-
+    if (passengers.length === 1) return;
+    const newPax = passengers.filter((_, i) => i !== index);
     setPassengers(newPax);
   };
 
-  // Handle Infant Last Name Selection
-  const handleInfantLastNameChange = (index: number, selection: string) => {
-    const newPax = [...passengers];
-    newPax[index].infantLastNameSelection = selection;
+  const swapAirports = (index: number) => {
+    const newSegments = [...segments];
+    const temp = newSegments[index].from;
+    newSegments[index].from = newSegments[index].to;
+    newSegments[index].to = temp;
+    setSegments(newSegments);
+  };
+
+  // Email suggestions
+  const emailDomains = ["gmail.com", "hotmail.com", "icloud.com", "yahoo.com", "outlook.com"];
+  const [emailSuggestions, setEmailSuggestions] = useState<string[]>([]);
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setContact({ ...contact, email: val });
     
-    if (selection !== "MANUAL") {
-      const selectedPax = passengers.find(p => p.id === selection);
-      if (selectedPax) {
-        newPax[index].infantLastName = selectedPax.lastName;
+    if (val.includes("@")) {
+      const [prefix, domainPart] = val.split("@");
+      const matches = emailDomains.filter(d => d.startsWith(domainPart)).map(d => `${prefix}@${d}`);
+      setEmailSuggestions(matches);
+    } else {
+      setEmailSuggestions([]);
+    }
+  };
+
+  // --- Validation ---
+  const validateDates = () => {
+    if (segments[0].date && segments[1].date) {
+      if (segments[1].date < segments[0].date) {
+        return "تنبيه: تاريخ العودة قبل تاريخ الذهاب!";
       }
     }
-    setPassengers(newPax);
+    return null;
   };
+
+  const validatePassport = (pax: Passenger) => {
+    if (pax.docExpiry && segments[0].date) {
+      const months = differenceInMonths(pax.docExpiry, segments[0].date);
+      if (months < 6) return "تنبيه: صلاحية الجواز أقل من 6 أشهر!";
+    }
+    return null;
+  };
+
+  const validateInfantAge = (pax: Passenger) => {
+    if (pax.hasInfant && pax.infantDob && segments[0].date) {
+      const age = differenceInYears(segments[0].date, pax.infantDob);
+      if (age >= 2) return "تنبيه: عمر الرضيع 2 سنة أو أكثر!";
+    }
+    return null;
+  };
+
+  // --- Render ---
 
   return (
-    <div className="flex gap-4 max-w-[900px] mx-auto pb-20 items-start">
+    <div className="flex gap-6 items-start w-full max-w-6xl mx-auto p-4">
       
-      {/* Main Content Column */}
-      <div className="flex-1 space-y-4 max-w-[700px]">
+      {/* Main Content */}
+      <div className="flex-1 space-y-6">
         
-        {/* --- Block 1: Flights (Multi-City) --- */}
-        <Card className="glass border-0 overflow-hidden shadow-lg">
-          <CardHeader className="bg-white/5 border-b border-white/10 py-2 px-4 flex flex-row justify-between items-center">
-            <CardTitle className="flex items-center gap-2 text-sm">
-              <Plane className="w-4 h-4 text-secondary" />
+        {/* Block 1 & 2: Flights */}
+        <Card className="border-white/10 bg-white/5 backdrop-blur-md shadow-xl">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg flex items-center gap-2 text-yellow-400">
+              <Plane className="w-5 h-5" />
               الرحلات (Flights)
             </CardTitle>
-            <Button onClick={addSegment} size="sm" className="h-6 text-[10px] bg-secondary/20 text-secondary hover:bg-secondary/30 border border-secondary/20 px-2">
-              <Plus className="w-3 h-3 ml-1" /> إضافة وجهة
-            </Button>
           </CardHeader>
-          <CardContent className="p-3 space-y-4">
-            {segments.map((seg, idx) => (
-              <div key={idx} className="space-y-2 relative">
-                {idx > 0 && <div className="h-px bg-white/5 w-full my-2" />}
-                
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold text-secondary bg-secondary/10 px-1.5 rounded">
-                      {idx + 1}. {idx === 0 ? "الذهاب" : idx === 1 ? "العودة" : `وجهة ${idx + 1}`}
-                    </span>
-                    {idx > 1 && (
-                      <Button variant="ghost" size="icon" onClick={() => removeSegment(idx)} className="h-4 w-4 text-red-400 hover:text-red-300">
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
-                    )}
-                  </div>
-                  <Button variant="ghost" size="icon" onClick={() => reverseRoute(idx)} className="h-5 w-5 text-white/50 hover:text-white" title="عكس المسار">
-                    <ArrowRightLeft className="w-3 h-3" />
-                  </Button>
-                </div>
+          <CardContent className="space-y-6">
+            {/* Validation Alert */}
+            {validateDates() && (
+              <div className="bg-red-500/20 text-red-200 p-3 rounded-md flex items-center gap-2 text-sm">
+                <AlertCircle className="w-4 h-4" />
+                {validateDates()}
+              </div>
+            )}
 
-                <div className="grid grid-cols-12 gap-2 items-end">
-                  <div className="col-span-4">
-                    <Label className="text-[9px] text-white/50 mb-1 block">التاريخ</Label>
-                    <Input 
-                      type="date" 
-                      value={getDateStr(seg.date)} 
-                      onChange={(e) => setSegmentDate(idx, e.target.value)} 
-                      className="glass-input h-7 text-xs px-2 block w-full"
-                    />
-                  </div>
-                  <div className="col-span-4">
-                    <Label className="text-[9px] text-white/50 mb-1 block">من</Label>
-                    <AirportSelector 
-                      value={seg.from} 
-                      onChange={(val) => updateSegment(idx, "from", val)} 
-                      placeholder="المغادرة"
-                    />
-                  </div>
-                  <div className="col-span-4">
-                    <Label className="text-[9px] text-white/50 mb-1 block">إلى</Label>
-                    <AirportSelector 
-                      value={seg.to} 
-                      onChange={(val) => updateSegment(idx, "to", val)} 
-                      placeholder="الوصول"
-                    />
-                  </div>
-                </div>
-                
-                <Button 
-                  size="sm" 
-                  variant="outline"
-                  className="w-full h-7 text-xs font-bold mt-1 bg-white/5 hover:bg-white/10 border-white/10"
-                  onClick={() => copyToClipboard(generateANCommand(seg), 1)}
-                >
-                  <Copy className="w-3 h-3 ml-1" /> نسخ أمر الرحلة {idx + 1}
+            {/* Flight 1: Departure */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-blue-200">الذهاب .1</Label>
+                <Button variant="ghost" size="icon" className="h-6 w-6 text-blue-300 hover:text-white" onClick={() => swapAirports(0)}>
+                  <ArrowRightLeft className="w-3 h-3" />
                 </Button>
               </div>
-            ))}
+              <div className="grid grid-cols-12 gap-2">
+                <div className="col-span-3">
+                  <Input 
+                    type="date" 
+                    className="bg-black/20 border-white/10 text-white h-9 text-sm"
+                    value={segments[0].date ? format(segments[0].date, "yyyy-MM-dd") : ""}
+                    onChange={(e) => updateSegment(0, "date", e.target.value ? new Date(e.target.value) : undefined)}
+                  />
+                </div>
+                <div className="col-span-4">
+                  <AirportSelector 
+                    value={segments[0].from}
+                    onChange={(val) => updateSegment(0, "from", val)}
+                    placeholder="المغادرة"
+                  />
+                </div>
+                <div className="col-span-1 flex justify-center items-center text-white/20">
+                  <ArrowRightLeft className="w-4 h-4" />
+                </div>
+                <div className="col-span-4">
+                  <AirportSelector 
+                    value={segments[0].to}
+                    onChange={(val) => updateSegment(0, "to", val)}
+                    placeholder="الوصول"
+                  />
+                </div>
+              </div>
+              <Button 
+                className="w-full bg-blue-600/80 hover:bg-blue-500 text-white h-8 text-xs"
+                onClick={() => handleCopy(generateANCommand(segments[0]), "أمر الذهاب")}
+              >
+                <Copy className="w-3 h-3 mr-2" />
+                نسخ أمر الرحلة 1
+              </Button>
+            </div>
+
+            {/* Flight 2: Return */}
+            <div className="space-y-3 pt-4 border-t border-white/5">
+              <div className="flex items-center justify-between">
+                <Label className="text-blue-200">العودة .2</Label>
+                <Button variant="ghost" size="icon" className="h-6 w-6 text-blue-300 hover:text-white" onClick={() => swapAirports(1)}>
+                  <ArrowRightLeft className="w-3 h-3" />
+                </Button>
+              </div>
+              <div className="grid grid-cols-12 gap-2">
+                <div className="col-span-3">
+                  <Input 
+                    type="date" 
+                    className="bg-black/20 border-white/10 text-white h-9 text-sm"
+                    value={segments[1].date ? format(segments[1].date, "yyyy-MM-dd") : ""}
+                    onChange={(e) => updateSegment(1, "date", e.target.value ? new Date(e.target.value) : undefined)}
+                  />
+                </div>
+                <div className="col-span-4">
+                  <AirportSelector 
+                    value={segments[1].from}
+                    onChange={(val) => updateSegment(1, "from", val)}
+                    placeholder="المغادرة"
+                  />
+                </div>
+                <div className="col-span-1 flex justify-center items-center text-white/20">
+                  <ArrowRightLeft className="w-4 h-4" />
+                </div>
+                <div className="col-span-4">
+                  <AirportSelector 
+                    value={segments[1].to}
+                    onChange={(val) => updateSegment(1, "to", val)}
+                    placeholder="الوصول"
+                  />
+                </div>
+              </div>
+              <Button 
+                className="w-full bg-blue-600/80 hover:bg-blue-500 text-white h-8 text-xs"
+                onClick={() => handleCopy(generateANCommand(segments[1]), "أمر العودة")}
+              >
+                <Copy className="w-3 h-3 mr-2" />
+                نسخ أمر الرحلة 2
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
-        {/* --- Block 3: Passengers --- */}
-        <Card className="glass border-0 overflow-hidden shadow-lg">
-          <CardHeader className="bg-white/5 border-b border-white/10 py-2 px-4 flex flex-row justify-between items-center">
-            <CardTitle className="flex items-center gap-2 text-sm">
-              <User className="w-4 h-4 text-secondary" />
-              3. الركاب (NM Lines)
+        {/* Block 3: Passengers */}
+        <Card className="border-white/10 bg-white/5 backdrop-blur-md shadow-xl">
+          <CardHeader className="pb-2 flex flex-row items-center justify-between">
+            <CardTitle className="text-lg flex items-center gap-2 text-yellow-400">
+              <User className="w-5 h-5" />
+              الركاب (NM Lines) .3
             </CardTitle>
-            <Button onClick={addPassenger} size="sm" className="h-6 text-[10px] bg-secondary/20 text-secondary hover:bg-secondary/30 border border-secondary/20 px-2">
-              <Plus className="w-3 h-3 ml-1" /> إضافة
+            <Button variant="outline" size="sm" onClick={addPassenger} className="h-7 text-xs border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/10">
+              <Plus className="w-3 h-3 mr-1" /> إضافة
             </Button>
           </CardHeader>
-          <CardContent className="p-3 space-y-3">
-            {passengers.map((pax, idx) => (
-              <div key={idx} className="p-2 rounded-lg bg-white/5 border border-white/10 space-y-2 relative group">
-                <div className="absolute top-2 left-2">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="text-red-400 hover:text-red-300 hover:bg-red-400/10 h-5 w-5"
-                    onClick={() => removePassenger(idx)}
-                    disabled={passengers.length === 1}
-                  >
+          <CardContent className="space-y-6">
+            {passengers.map((pax, index) => (
+              <div key={pax.id} className="bg-black/20 p-3 rounded-lg border border-white/5 relative group">
+                <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button variant="ghost" size="icon" className="h-6 w-6 text-red-400 hover:text-red-300 hover:bg-red-900/20" onClick={() => removePassenger(index)}>
                     <Trash2 className="w-3 h-3" />
                   </Button>
                 </div>
                 
-                <div className="flex items-center gap-2">
-                  <span className="bg-secondary/20 text-secondary px-1.5 py-0.5 rounded text-[9px] font-bold">P{idx + 1}</span>
+                <div className="mb-2 flex items-center gap-2">
+                  <span className="bg-yellow-500/20 text-yellow-400 text-xs px-2 py-0.5 rounded font-mono">P{index + 1}</span>
                 </div>
 
                 {/* Basic Info */}
-                <div className="grid grid-cols-12 gap-2">
-                  <div className="col-span-4">
-                    <Label className="text-[9px] text-white/50">الاسم الأول</Label>
-                    <Input 
-                      value={pax.firstName} 
-                      onChange={(e) => updatePax(idx, "firstName", e.target.value.toUpperCase())}
-                      className="glass-input font-mono h-7 text-xs"
-                      placeholder="MOHAMMED"
-                    />
-                  </div>
-                  <div className="col-span-4">
-                    <Label className="text-[9px] text-white/50">اسم العائلة</Label>
-                    <Input 
-                      value={pax.lastName} 
-                      onChange={(e) => updatePax(idx, "lastName", e.target.value.toUpperCase())}
-                      className="glass-input font-mono h-7 text-xs"
-                      placeholder="ALSAUD"
-                    />
-                  </div>
-                  <div className="col-span-4">
-                    <Label className="text-[9px] text-white/50">اللقب</Label>
-                    <Select value={pax.title} onValueChange={(v) => updatePax(idx, "title", v)}>
-                      <SelectTrigger className="glass-input h-7 text-xs">
+                <div className="grid grid-cols-12 gap-2 mb-3">
+                  <div className="col-span-2">
+                    <Select value={pax.title} onValueChange={(val) => updatePassenger(index, "title", val)}>
+                      <SelectTrigger className="h-8 text-xs bg-black/20 border-white/10 text-white">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="MR">MR (سيد)</SelectItem>
-                        <SelectItem value="MS">MS (سيدة)</SelectItem>
+                        <SelectItem value="MRS">MRS (سيدة)</SelectItem>
+                        <SelectItem value="MS">MS (آنسة)</SelectItem>
                         <SelectItem value="MSTR">MSTR (طفل)</SelectItem>
                         <SelectItem value="MISS">MISS (طفلة)</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
+                  <div className="col-span-5">
+                    <Input 
+                      placeholder="الاسم الأول" 
+                      className="h-8 text-xs bg-black/20 border-white/10 text-white uppercase"
+                      value={pax.firstName}
+                      onChange={(e) => updatePassenger(index, "firstName", e.target.value)}
+                    />
+                  </div>
+                  <div className="col-span-5">
+                    <Input 
+                      placeholder="اسم العائلة" 
+                      className="h-8 text-xs bg-black/20 border-white/10 text-white uppercase"
+                      value={pax.lastName}
+                      onChange={(e) => updatePassenger(index, "lastName", e.target.value)}
+                    />
+                  </div>
                 </div>
 
-                {/* Child DOB */}
-                {(pax.title === "MSTR" || pax.title === "MISS") && (
-                  <div className="grid grid-cols-12 gap-2 animate-in slide-in-from-top-2">
-                    <div className="col-span-6">
-                      <Label className="text-[9px] text-white/50">تاريخ ميلاد الطفل</Label>
-                      <Input 
-                        type="date"
-                        value={pax.dob ? format(pax.dob, "yyyy-MM-dd") : ""}
-                        onChange={(e) => updatePax(idx, "dob", e.target.value ? parseISO(e.target.value) : undefined)}
-                        className="glass-input h-7 text-xs px-2 block w-full"
-                      />
-                    </div>
-                  </div>
-                )}
+                {/* Infant Toggle */}
+                <div className="flex items-center gap-2 mb-2">
+                  <input 
+                    type="checkbox" 
+                    id={`infant-${pax.id}`}
+                    className="rounded border-white/20 bg-black/20"
+                    checked={pax.hasInfant}
+                    onChange={(e) => updatePassenger(index, "hasInfant", e.target.checked)}
+                  />
+                  <Label htmlFor={`infant-${pax.id}`} className="text-xs text-blue-200 cursor-pointer">مع رضيع (Infant)</Label>
+                </div>
 
-                {/* Infant Section */}
-                <div className="pt-1">
-                  <div className="flex items-center space-x-2 space-x-reverse mb-1">
-                    <Checkbox 
-                      id={`infant-${idx}`} 
-                      checked={pax.hasInfant || false}
-                      onCheckedChange={(checked) => updatePax(idx, "hasInfant", checked)}
-                      className="h-3 w-3"
-                    />
-                    <Label htmlFor={`infant-${idx}`} className="text-[10px] cursor-pointer">معه رضيع (Infant)</Label>
-                  </div>
-
-                  {pax.hasInfant && (
-                    <div className="bg-white/5 p-2 rounded grid grid-cols-12 gap-2 animate-in slide-in-from-top-2 border border-white/5">
+                {/* Infant Details */}
+                {pax.hasInfant && (
+                  <div className="bg-blue-500/10 p-2 rounded mb-3 border border-blue-500/20">
+                    {validateInfantAge(pax) && (
+                      <div className="text-red-300 text-xs mb-2 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" /> {validateInfantAge(pax)}
+                      </div>
+                    )}
+                    <div className="grid grid-cols-12 gap-2">
                       <div className="col-span-4">
-                        <Label className="text-[9px] text-white/50">اسم الرضيع</Label>
                         <Input 
-                          value={pax.infantFirstName || ""} 
-                          onChange={(e) => updatePax(idx, "infantFirstName", e.target.value.toUpperCase())}
-                          className="glass-input h-7 text-xs font-mono"
-                          placeholder="AHMED"
+                          placeholder="اسم الرضيع الأول" 
+                          className="h-7 text-xs bg-black/20 border-white/10 text-white uppercase"
+                          value={pax.infantFirstName || ""}
+                          onChange={(e) => updatePassenger(index, "infantFirstName", e.target.value)}
                         />
                       </div>
                       <div className="col-span-4">
-                        <Label className="text-[9px] text-white/50">عائلة الرضيع</Label>
-                        <Select 
-                          value={pax.infantLastNameSelection || "MANUAL"} 
-                          onValueChange={(v) => handleInfantLastNameChange(idx, v)}
-                        >
-                          <SelectTrigger className="glass-input h-7 text-[10px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="MANUAL">يدوي / جديد</SelectItem>
-                            {passengers.map(p => p.lastName && (
-                              <SelectItem key={p.id} value={p.id}>{p.lastName}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {pax.infantLastNameSelection === "MANUAL" && (
-                          <Input 
-                            value={pax.infantLastName || ""} 
-                            onChange={(e) => updatePax(idx, "infantLastName", e.target.value.toUpperCase())}
-                            className="glass-input h-7 text-xs font-mono mt-1"
-                            placeholder="FAMILY NAME"
-                          />
-                        )}
+                        <Input 
+                          placeholder="عائلة الرضيع" 
+                          className="h-7 text-xs bg-black/20 border-white/10 text-white uppercase"
+                          value={pax.infantLastName || pax.lastName}
+                          onChange={(e) => updatePassenger(index, "infantLastName", e.target.value)}
+                        />
                       </div>
-                      <div className="col-span-4">
-                        <Label className="text-[9px] text-white/50">تاريخ الميلاد</Label>
+                      <div className="col-span-2">
                         <Input 
                           type="date"
+                          className="h-7 text-xs bg-black/20 border-white/10 text-white"
                           value={pax.infantDob ? format(pax.infantDob, "yyyy-MM-dd") : ""}
-                          onChange={(e) => updatePax(idx, "infantDob", e.target.value ? parseISO(e.target.value) : undefined)}
-                          className="glass-input h-7 text-xs px-2 block w-full"
+                          onChange={(e) => updatePassenger(index, "infantDob", e.target.value ? new Date(e.target.value) : undefined)}
                         />
                       </div>
-                      <div className="col-span-4">
-                        <Label className="text-[9px] text-white/50">جنس الرضيع</Label>
-                        <Select value={pax.infantGender || "M"} onValueChange={(v: any) => updatePax(idx, "infantGender", v)}>
-                          <SelectTrigger className="glass-input h-7 text-xs">
+                      <div className="col-span-2">
+                        <Select value={pax.infantGender || "M"} onValueChange={(val) => updatePassenger(index, "infantGender", val)}>
+                          <SelectTrigger className="h-7 text-xs bg-black/20 border-white/10 text-white">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -415,171 +404,173 @@ export default function AmadeusEntryHelper() {
                         </Select>
                       </div>
                     </div>
+                  </div>
+                )}
+
+                {/* DOCS Details (Collapsible or Always Visible? Let's keep it visible for efficiency) */}
+                <div className="pt-2 border-t border-white/5 mt-2">
+                  <Label className="text-[10px] text-white/40 mb-1 block">وثائق السفر (DOCS)</Label>
+                  {validatePassport(pax) && (
+                    <div className="text-red-300 text-xs mb-2 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" /> {validatePassport(pax)}
+                    </div>
                   )}
-                </div>
-              </div>
-            ))}
-          </CardContent>
-          <CardFooter className="p-3 pt-0">
-            <Button 
-              size="sm" 
-              variant={nmCommands ? "secondary" : "outline"}
-              className="w-full h-8 text-xs font-bold"
-              disabled={!nmCommands}
-              onClick={() => copyToClipboard(nmCommands, 3)}
-            >
-              <Copy className="w-3 h-3 ml-1" /> نسخ الركاب (Copy NM)
-            </Button>
-          </CardFooter>
-        </Card>
-
-        {/* --- Block 4: Contact + Docs --- */}
-        <Card className="glass border-0 overflow-hidden shadow-lg">
-          <CardHeader className="bg-white/5 border-b border-white/10 py-2 px-4">
-            <CardTitle className="flex items-center gap-2 text-sm">
-              <Phone className="w-4 h-4 text-secondary" />
-              4. التواصل والوثائق (Contact + Docs)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-3 space-y-3">
-            {/* Contact Inputs */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-              <div className="space-y-1">
-                <Label className="text-[9px] text-white/50">الجوال (05...)</Label>
-                <div className="relative">
-                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-white/50 font-mono text-[10px] dir-ltr">+966</span>
-                  <Input 
-                    value={contact.mobile}
-                    onChange={(e) => setContact({ ...contact, mobile: e.target.value })}
-                    className="glass-input pl-10 font-mono text-left dir-ltr h-7 text-xs"
-                    placeholder="50..."
-                  />
-                </div>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-[9px] text-white/50">البريد الإلكتروني</Label>
-                <Input 
-                  value={contact.email}
-                  onChange={(e) => setContact({ ...contact, email: e.target.value })}
-                  className="glass-input font-mono text-left dir-ltr h-7 text-xs"
-                  placeholder="email@..."
-                />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-[9px] text-white/50">اللغة</Label>
-                <Select value={contact.language} onValueChange={(v: "AR" | "EN") => setContact({ ...contact, language: v })}>
-                  <SelectTrigger className="glass-input h-7 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="AR">العربية</SelectItem>
-                    <SelectItem value="EN">الإنجليزية</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Docs Inputs (Per Passenger) */}
-            <div className="space-y-2 pt-2 border-t border-white/5">
-              <Label className="text-[9px] text-secondary block">وثائق السفر (SR DOCS)</Label>
-              {passengers.map((pax, idx) => (
-                <div key={idx} className="p-2 rounded bg-white/5 border border-white/5">
-                  <div className="text-[9px] font-bold text-white/70 mb-1">P{idx + 1}: {pax.firstName} {pax.lastName}</div>
-                  <div className="grid grid-cols-12 gap-1.5">
-                    <div className="col-span-3">
-                      <Label className="text-[8px] text-white/40">نوع الوثيقة</Label>
-                      <Select value={pax.docType || "I"} onValueChange={(v: any) => updatePax(idx, "docType", v)}>
-                        <SelectTrigger className="glass-input h-6 text-[9px] px-1"><SelectValue /></SelectTrigger>
+                  <div className="grid grid-cols-12 gap-2">
+                    <div className="col-span-2">
+                      <Select value={pax.docType} onValueChange={(val) => updatePassenger(index, "docType", val)}>
+                        <SelectTrigger className="h-7 text-xs bg-black/20 border-white/10 text-white">
+                          <SelectValue />
+                        </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="I">هوية (I)</SelectItem>
                           <SelectItem value="P">جواز (P)</SelectItem>
+                          <SelectItem value="A">إقامة (A)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="col-span-3">
-                      <Label className="text-[8px] text-white/40">رقم الوثيقة</Label>
-                      <Input value={pax.docNumber || ""} onChange={e => updatePax(idx, "docNumber", e.target.value)} className="glass-input h-6 text-[9px] font-mono px-1" placeholder="10..." />
-                    </div>
-                    <div className="col-span-3">
-                      <Label className="text-[8px] text-white/40">الجنسية</Label>
-                      <Input value={pax.nationality || "SAU"} onChange={e => updatePax(idx, "nationality", e.target.value.toUpperCase())} className="glass-input h-6 text-[9px] font-mono px-1" />
-                    </div>
-                    <div className="col-span-3">
-                      <Label className="text-[8px] text-white/40">مكان الميلاد</Label>
-                      <Input value={pax.birthPlace || "SAU"} onChange={e => updatePax(idx, "birthPlace", e.target.value.toUpperCase())} className="glass-input h-6 text-[9px] font-mono px-1" />
-                    </div>
-                    <div className="col-span-4">
-                      <Label className="text-[8px] text-white/40">تاريخ الميلاد</Label>
                       <Input 
-                        type="date"
-                        value={pax.dob ? format(pax.dob, "yyyy-MM-dd") : ""}
-                        onChange={(e) => updatePax(idx, "dob", e.target.value ? parseISO(e.target.value) : undefined)}
-                        className="glass-input h-6 text-[9px] px-1 block w-full"
+                        placeholder="رقم الوثيقة" 
+                        className="h-7 text-xs bg-black/20 border-white/10 text-white uppercase"
+                        value={pax.docNumber || ""}
+                        onChange={(e) => updatePassenger(index, "docNumber", e.target.value)}
                       />
                     </div>
-                    <div className="col-span-4">
-                      <Label className="text-[8px] text-white/40">تاريخ الانتهاء</Label>
+                    <div className="col-span-2">
+                      <Input 
+                        placeholder="الجنسية (SAU)" 
+                        className="h-7 text-xs bg-black/20 border-white/10 text-white uppercase"
+                        value={pax.nationality || "SAU"}
+                        onChange={(e) => updatePassenger(index, "nationality", e.target.value)}
+                      />
+                    </div>
+                    <div className="col-span-2">
                       <Input 
                         type="date"
+                        placeholder="انتهاء"
+                        className="h-7 text-xs bg-black/20 border-white/10 text-white"
                         value={pax.docExpiry ? format(pax.docExpiry, "yyyy-MM-dd") : ""}
-                        onChange={(e) => updatePax(idx, "docExpiry", e.target.value ? parseISO(e.target.value) : undefined)}
-                        className="glass-input h-6 text-[9px] px-1 block w-full"
+                        onChange={(e) => updatePassenger(index, "docExpiry", e.target.value ? new Date(e.target.value) : undefined)}
                       />
                     </div>
-                    <div className="col-span-4">
-                      <Label className="text-[8px] text-white/40">الجنس</Label>
-                      <Select value={pax.gender || "M"} onValueChange={(v: any) => updatePax(idx, "gender", v)}>
-                        <SelectTrigger className="glass-input h-6 text-[9px] px-1"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="M">ذكر (M)</SelectItem>
-                          <SelectItem value="F">أنثى (F)</SelectItem>
-                        </SelectContent>
-                      </Select>
+                    <div className="col-span-3">
+                      <Input 
+                        type="date"
+                        placeholder="ميلاد"
+                        className="h-7 text-xs bg-black/20 border-white/10 text-white"
+                        value={pax.dob ? format(pax.dob, "yyyy-MM-dd") : ""}
+                        onChange={(e) => updatePassenger(index, "dob", e.target.value ? new Date(e.target.value) : undefined)}
+                        disabled={!pax.docExpiry} // Disable DOB if no expiry, per user rule "ترك مكان تاريخ الميلاد فارغ"
+                      />
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-          <CardFooter className="p-3 pt-0">
+
+              </div>
+            ))}
             <Button 
-              size="sm" 
-              variant={block4Commands ? "secondary" : "outline"}
-              className="w-full h-8 text-xs font-bold"
-              disabled={!block4Commands}
-              onClick={() => copyToClipboard(block4Commands, 4)}
+              className="w-full bg-blue-600/80 hover:bg-blue-500 text-white h-8 text-xs"
+              onClick={() => handleCopy(generateNMCommand(passengers), "أسماء الركاب")}
             >
-              <Copy className="w-3 h-3 ml-1" /> نسخ التواصل والوثائق (Copy Contact+Docs)
+              <Copy className="w-3 h-3 mr-2" />
+              نسخ أسماء الركاب (NM)
             </Button>
-          </CardFooter>
+          </CardContent>
         </Card>
 
-        {/* --- Block 5: Packages --- */}
-        <Card className="glass border-0 overflow-hidden shadow-lg">
-          <CardHeader className="bg-white/5 border-b border-white/10 py-2 px-4">
-            <CardTitle className="flex items-center gap-2 text-sm">
-              <Check className="w-4 h-4 text-secondary" />
-              5. الباقات (Packages)
+        {/* Block 4: Contact & Finalize */}
+        <Card className="border-white/10 bg-white/5 backdrop-blur-md shadow-xl">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg flex items-center gap-2 text-yellow-400">
+              <Phone className="w-5 h-5" />
+              التواصل والوثائق (AP + DOCS) .4
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-3">
-            <div className="grid grid-cols-2 gap-2">
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label className="text-xs text-blue-200">رقم الجوال (بدون 05 أو 966)</Label>
+                <div className="flex gap-2">
+                  <span className="bg-black/20 border border-white/10 text-white/50 text-xs flex items-center px-2 rounded">+966</span>
+                  <Input 
+                    placeholder="5xxxxxxxx" 
+                    className="h-8 text-xs bg-black/20 border-white/10 text-white"
+                    value={contact.mobile}
+                    onChange={(e) => setContact({ ...contact, mobile: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="space-y-1 relative">
+                <Label className="text-xs text-blue-200">البريد الإلكتروني</Label>
+                <Input 
+                  placeholder="example@mail.com" 
+                  className="h-8 text-xs bg-black/20 border-white/10 text-white"
+                  value={contact.email}
+                  onChange={handleEmailChange}
+                />
+                {emailSuggestions.length > 0 && (
+                  <div className="absolute top-full left-0 w-full bg-slate-800 border border-white/10 rounded-md z-10 mt-1 shadow-lg">
+                    {emailSuggestions.map(s => (
+                      <div 
+                        key={s} 
+                        className="px-3 py-1.5 text-xs text-white hover:bg-blue-600 cursor-pointer"
+                        onClick={() => {
+                          setContact({ ...contact, email: s });
+                          setEmailSuggestions([]);
+                        }}
+                      >
+                        {s}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            <Button 
+              className="w-full bg-green-600/80 hover:bg-green-500 text-white h-8 text-xs"
+              onClick={() => handleCopy(generateBlock4Commands(contact, passengers), "أوامر التواصل والوثائق")}
+            >
+              <Copy className="w-3 h-3 mr-2" />
+              نسخ التواصل + الحفظ + الوثائق (AP + DOCS)
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Block 5: Packages */}
+        <Card className="border-white/10 bg-white/5 backdrop-blur-md shadow-xl">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg flex items-center gap-2 text-yellow-400">
+              <FileText className="w-5 h-5" />
+              الباقات (Packages) .5
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-4 gap-2">
               {packages.map((pkg) => (
-                <Button 
-                  key={pkg.name}
-                  variant="outline" 
-                  className="h-auto py-2 flex flex-col gap-1 border-white/10 hover:bg-secondary/20 hover:text-secondary hover:border-secondary/30 items-start"
-                  onClick={() => copyToClipboard(`FXB/FF-${pkg.name}`, 5)}
-                >
-                  <div className="flex justify-between w-full items-center">
-                    <span className="text-xs font-bold">{pkg.title}</span>
-                    <Copy className="w-3 h-3 opacity-50" />
-                  </div>
-                  <span className="text-[9px] font-mono opacity-50">{pkg.name}</span>
-                  <div className="text-[9px] text-white/40 mt-1 text-right w-full">
-                    {pkg.features[0]}
-                  </div>
-                </Button>
+                <TooltipProvider key={pkg.name}>
+                  <Tooltip delayDuration={0}>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        className="h-10 text-xs border-white/10 bg-black/20 hover:bg-blue-500/20 hover:text-blue-300 hover:border-blue-500/50 transition-all"
+                        onClick={() => handleCopy(`FXB/FF-${pkg.name}`, `باقة ${pkg.title}`)}
+                      >
+                        {pkg.title}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-slate-900 border-white/10 text-white p-3 max-w-xs">
+                      <div className="font-bold mb-2 text-yellow-400">{pkg.title}</div>
+                      <ul className="space-y-1 text-[10px]">
+                        {pkg.features.map((f, i) => (
+                          <li key={i} className="flex items-start gap-1.5">
+                            <CheckCircle2 className="w-3 h-3 text-green-400 shrink-0 mt-0.5" />
+                            <span className="text-white/80">{f}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               ))}
             </div>
           </CardContent>
@@ -587,33 +578,41 @@ export default function AmadeusEntryHelper() {
 
       </div>
 
-      {/* Right Sidebar: Progress */}
-      <div className="w-[100px] hidden md:block sticky top-24 h-fit">
-        <div className="glass rounded-xl p-3 space-y-4 border border-white/10">
-          <h3 className="text-[10px] font-bold text-white/50 text-center uppercase tracking-widest">Progress</h3>
-          <div className="space-y-3 relative">
+      {/* Sidebar: Progress */}
+      <div className="w-64 shrink-0 sticky top-4">
+        <Card className="border-white/10 bg-white/5 backdrop-blur-md shadow-xl">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-sm text-white/60 uppercase tracking-wider">Progress</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-0 relative">
             {/* Vertical Line */}
-            <div className="absolute right-[10px] top-2 bottom-2 w-0.5 bg-white/10 -z-10" />
+            <div className="absolute left-[19px] top-2 bottom-2 w-0.5 bg-white/10" />
             
-            {[1, 2, 3, 4, 5].map((step) => {
-              const isCompleted = completedSteps.includes(step);
-              return (
-                <div key={step} className="flex items-center justify-end gap-2">
-                  <span className={`text-[9px] font-bold transition-colors ${isCompleted ? "text-secondary" : "text-white/30"}`}>
-                    STEP {step}
-                  </span>
-                  <div className={`w-5 h-5 rounded-full flex items-center justify-center border-2 transition-all ${
-                    isCompleted 
-                      ? "bg-secondary border-secondary text-black" 
-                      : "bg-black/40 border-white/10 text-transparent"
-                  }`}>
-                    <Check className="w-2.5 h-2.5" />
-                  </div>
+            {[
+              { id: 1, label: "AN (الرحلات)", desc: "تحديد الوجهات" },
+              { id: 2, label: "FXX (تسعير)", desc: "للبالغ/الطفل/الرضيع" },
+              { id: 3, label: "NM1 (الأسماء)", desc: "إدخال الركاب" },
+              { id: 4, label: "AP (التواصل)", desc: "جوال وإيميل" },
+              { id: 5, label: "TKOK/RFF", desc: "حفظ مبدئي" },
+              { id: 6, label: "SR DOCS", desc: "وثائق السفر" },
+              { id: 7, label: "FXP (تثبيت)", desc: "تثبيت السعر" },
+              { id: 8, label: "FP SADAD", desc: "طريقة الدفع" },
+              { id: 9, label: "TTP/RT", desc: "إصدار التذكرة" },
+            ].map((step, i) => (
+              <div key={step.id} className="relative flex items-center gap-3 py-2 group">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold z-10 transition-all ${
+                  activeStep >= step.id ? "bg-blue-500 text-white shadow-lg shadow-blue-500/20" : "bg-slate-800 text-white/30 border border-white/10"
+                }`}>
+                  {activeStep > step.id ? <CheckCircle2 className="w-5 h-5" /> : step.id}
                 </div>
-              );
-            })}
-          </div>
-        </div>
+                <div className="flex-1">
+                  <div className={`text-xs font-bold ${activeStep >= step.id ? "text-white" : "text-white/40"}`}>{step.label}</div>
+                  <div className="text-[10px] text-white/30">{step.desc}</div>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
       </div>
 
     </div>
