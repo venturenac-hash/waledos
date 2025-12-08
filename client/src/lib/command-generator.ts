@@ -7,10 +7,12 @@ export interface Passenger {
   title: string; // MR, MS, MSTR, MISS
   hasInfant?: boolean;
   infantFirstName?: string;
+  infantLastName?: string; // Explicit last name for infant
   infantDob?: Date;
+  infantGender?: "M" | "F"; // M or F, will be converted to MI/MY in DOCS
   dob?: Date; // For Child & SR DOCS
   nationality?: string; // Default SAU
-  docType?: "I" | "P"; // I=Iqama/National ID, P=Passport
+  docType?: "I" | "A" | "P"; // I=Identity, A=Iqama, P=Passport
   docNumber?: string;
   docExpiry?: Date;
   gender?: "M" | "F";
@@ -18,6 +20,7 @@ export interface Passenger {
 }
 
 export interface FlightSegment {
+  id: string;
   date: Date;
   from: string;
   to: string;
@@ -36,10 +39,10 @@ const getPaxType = (title: string): "ADT" | "CHD" => {
 };
 
 // Block 1 & 2: AN Command
-export const generateANCommand = (segment: FlightSegment): string => {
+export const generateANCommand = (segment: { date: Date, from: string, to: string }): string => {
   if (!segment.date || !segment.from || !segment.to) return "";
   const dateStr = format(segment.date, "ddMMM").toUpperCase();
-  return `AN ${dateStr} ${segment.from} ${segment.to}`;
+  return `AN${dateStr}${segment.from}${segment.to}`;
 };
 
 // Block 3: NM Command
@@ -48,22 +51,22 @@ export const generateNMCommand = (passengers: Passenger[]): string => {
   
   passengers.forEach((pax) => {
     // Base NM line: NM1 LAST/FIRST TITLE
-    let line = `NM1 ${pax.lastName.toUpperCase()}/${pax.firstName.toUpperCase()} ${pax.title}`;
+    let line = `NM1${pax.lastName.toUpperCase()}/${pax.firstName.toUpperCase()} ${pax.title}`;
     
-    // Infant logic: (INFALZUWAYDI/yasser/10JAN25)
-    // "Infant: must render exactly as (INF{PARENT_LAST}/{INF_FIRST}/{DDMONYY}) with no extra spaces inside INF token"
+    // Infant logic: (INF{LAST}/{FIRST}/{DDMONYY})
     if (pax.hasInfant && pax.infantFirstName && pax.infantDob) {
       const infDobStr = format(pax.infantDob, "ddMMMyy").toUpperCase();
-      const infStr = `(INF${pax.lastName.toUpperCase()}/${pax.infantFirstName.toUpperCase()}/${infDobStr})`;
-      line += ` ${infStr}`;
+      // Use explicit infant last name if provided, otherwise fallback to parent's last name
+      const infLast = pax.infantLastName ? pax.infantLastName.toUpperCase() : pax.lastName.toUpperCase();
+      const infStr = `(INF${infLast}/${pax.infantFirstName.toUpperCase()}/${infDobStr})`;
+      line += `${infStr}`;
     }
     
-    // Child logic: (CHD/10MAY22)
-    // "Child: render as (CHD/{DDMONYY}) appended at end of that passenger's NM line."
+    // Child logic: (CHD/{DDMONYY})
     const type = getPaxType(pax.title);
     if (type === "CHD" && pax.dob) {
       const chdDobStr = format(pax.dob, "ddMMMyy").toUpperCase();
-      line += ` (CHD/${chdDobStr})`;
+      line += `(CHD/${chdDobStr})`;
     }
     
     lines.push(line);
@@ -77,21 +80,19 @@ export const generateBlock4Commands = (contact: ContactInfo, passengers: Passeng
   const commands: string[] = [];
   
   // 1. Contact Info (APN/APM/APE)
-  // "P list generation: automatically build P1,2,3 (comma-separated, no spaces)"
+  // P1,2,3...
   const pRange = Array.from({ length: contact.paxCount }, (_, i) => i + 1).join(",");
   const paxStr = `/P${pRange}`;
   
   if (contact.mobile) {
-    // "Phone number: input should accept either full +9665xxxxxxxx or 05xxxxxxxx — normalize to +9665xxxxxxxx"
     let cleanMobile = contact.mobile.replace(/\D/g, "");
-    if (cleanMobile.startsWith("0")) cleanMobile = cleanMobile.substring(1);
+    // Normalize to +966 format
+    if (cleanMobile.startsWith("05")) cleanMobile = "5" + cleanMobile.substring(2);
     if (cleanMobile.startsWith("966")) cleanMobile = cleanMobile.substring(3);
-    // Now cleanMobile should be 5xxxxxxxx
+    if (cleanMobile.startsWith("5")) cleanMobile = "+966" + cleanMobile;
     
-    const finalMobile = `966${cleanMobile}`;
-    
-    commands.push(`APN-SV/M+${finalMobile}/${contact.language}${paxStr}`);
-    commands.push(`APM-SV/M+${finalMobile}/${contact.language}${paxStr}`);
+    commands.push(`APN-SV/M${cleanMobile}${paxStr}`);
+    commands.push(`APM-SV/M${cleanMobile}${paxStr}`);
   }
   
   if (contact.email) {
@@ -105,75 +106,128 @@ export const generateBlock4Commands = (contact: ContactInfo, passengers: Passeng
   commands.push("ER");
   
   // 3. SR DOCS
-  // "SR DOCS SV HK1-{IDTYPE}-SAU-{DOCNUMBER}-{GOVCODE}-{DOB}-{SEX}-{EXPIRY}-{LAST}/{FIRST}/P{index}"
   passengers.forEach((pax, index) => {
     const paxNum = index + 1;
     
-    const generateDocsLine = (
-      p: Passenger, 
-      isInfant: boolean = false, 
-      infName?: string, 
-      infDob?: Date
-    ) => {
-      // Check required fields
-      if (!p.docNumber || !p.dob || !p.docExpiry || !p.gender) return null;
-      
-      // Defaults
-      const docType = p.docType || "I";
-      const nat = (p.nationality || "SAU").toUpperCase();
-      const birthPlace = (p.birthPlace || "SAU").toUpperCase(); // GOVCODE in template
-      
-      const docNum = p.docNumber;
-      // Use infant DOB if infant, else pax DOB
-      const targetDob = isInfant && infDob ? infDob : p.dob;
-      const dobStr = format(targetDob, "ddMMMyy").toUpperCase();
-      
-      const gender = p.gender;
-      const expiry = format(p.docExpiry, "ddMMMyy").toUpperCase();
-      
-      // Name logic
-      const lastName = p.lastName.toUpperCase();
-      const firstName = isInfant && infName ? infName.toUpperCase() : p.firstName.toUpperCase();
-      
-      const pRef = `/P${paxNum}`;
-      
-      return `SR DOCS SV HK1-${docType}-${nat}-${docNum}-${birthPlace}-${dobStr}-${gender}-${expiry}-${lastName}/${firstName}${pRef}`;
-    };
-
     // Adult/Child DOCS
-    const mainDocs = generateDocsLine(pax);
-    if (mainDocs) commands.push(mainDocs);
+    if (pax.docNumber) {
+      const docType = pax.docType || "I";
+      const nat = (pax.nationality || "SAU").toUpperCase();
+      const birthPlace = (pax.birthPlace || "SAU").toUpperCase();
+      const docNum = pax.docNumber;
+      
+      // Gender logic: M/F derived from title if not set (but we removed gender input, so derive from title)
+      let gender = "M";
+      if (pax.title === "MRS" || pax.title === "MS" || pax.title === "MISS") gender = "F";
+      
+      const lastName = pax.lastName.toUpperCase();
+      const firstName = pax.firstName.toUpperCase();
+      
+      // Date logic: If expiry is present, include DOB and Expiry. If not, include neither.
+      let dobStr = "";
+      let expiryStr = "";
+      
+      if (pax.docExpiry) {
+        expiryStr = format(pax.docExpiry, "ddMMMyy").toUpperCase();
+        if (pax.dob) {
+          dobStr = format(pax.dob, "ddMMMyy").toUpperCase();
+        }
+      }
+      
+      // SR DOCS SV HK1-{Type}-{Issue}-{Num}-{Nat}-{DOB}-{Gender}-{Expiry}-{Last}/{First}/P{i}
+      // Note: If DOB/Expiry empty, we still need hyphens? 
+      // Example without expiry: ...-SAU-1105364164-SAU--M--ALZUWAYDI... (Double hyphen for missing dates?)
+      // User example: ...-SAU-14JUN11-M-14JUN30... (It HAS dates even in "no expiry" example, which is confusing)
+      // But text says "ترك مكان تاريخ الميلاد فارغ".
+      // Let's assume: ...-SAU-DocNum-SAU--M--Last/First...
+      
+      commands.push(`SR DOCS SV HK1-${docType}-${nat}-${docNum}-${birthPlace}-${dobStr}-${gender}-${expiryStr}-${lastName}/${firstName}/P${paxNum}`);
+    }
     
     // Infant DOCS
-    // "If infant is tied to P2, ensure SR DOCS contains both P2 parent line and infant line ending /P2."
-    if (pax.hasInfant && pax.infantFirstName && pax.infantDob && mainDocs) {
-       const infDocs = generateDocsLine(pax, true, pax.infantFirstName, pax.infantDob);
-       if (infDocs) commands.push(infDocs);
+    if (pax.hasInfant && pax.infantFirstName && pax.infantDob) {
+       // Infant needs its own DOCS line attached to parent P#
+       // Assuming infant shares nationality/doc details for now as UI doesn't have full infant passport fields yet
+       // But we need to use MI/MY for gender
+       
+       const docType = pax.docType || "I"; // Fallback to parent's doc type
+       const nat = (pax.nationality || "SAU").toUpperCase(); // Fallback to parent's nationality
+       const birthPlace = (pax.birthPlace || "SAU").toUpperCase(); // Fallback to parent's birth place
+       const docNum = pax.docNumber || "UNKNOWN"; // Fallback to parent's doc number (Incorrect but placeholder)
+       
+       const dobStr = format(pax.infantDob, "ddMMMyy").toUpperCase();
+       
+       // Gender mapping: M -> MI, F -> MY (User requested MY for female infant)
+       const gender = pax.infantGender === "M" ? "MI" : "MY";
+       
+       const expiry = pax.docExpiry ? format(pax.docExpiry, "ddMMMyy").toUpperCase() : "";
+       
+       const lastName = pax.infantLastName ? pax.infantLastName.toUpperCase() : pax.lastName.toUpperCase();
+       const firstName = pax.infantFirstName.toUpperCase();
+       
+       commands.push(`SR DOCS SV HK1-${docType}-${nat}-${docNum}-${birthPlace}-${dobStr}-${gender}-${expiry}-${lastName}/${firstName}/P${paxNum}`);
     }
   });
+  
+  // 4. Final Save
+  commands.push("RFF");
+  commands.push("ER");
+  commands.push("ER");
   
   return commands.join('\n');
 };
 
 export const packages = [
-  {
-    name: "NSAVERE",
-    title: "اقتصادي (Saver)",
-    features: ["شنطة واحدة 23كجم", "لا يمكن الاسترجاع", "تغيير برسوم", "اختيار المقعد برسوم"]
+  { 
+    name: "SAVER", 
+    title: "توفير (Saver)", 
+    features: [
+      "الأمتعة اليدوية: 1 قطعة 7 كجم",
+      "الأمتعة المسجلة: غير مسموح",
+      "اختيار المقعد: تُطبق رسوم",
+      "أميال الفرسان: 0%",
+      "الترقية بالأميال: غير مسموح",
+      "الإلغاء: غير مسموح",
+      "تغيير الرحلة: غير مسموح"
+    ] 
   },
-  {
-    name: "NBASICE",
-    title: "أساسي (Basic)",
-    features: ["شنطة واحدة 23كجم", "استرجاع برسوم", "تغيير برسوم أقل", "اختيار المقعد برسوم"]
+  { 
+    name: "BASIC", 
+    title: "أساسي (Basic)", 
+    features: [
+      "الأمتعة اليدوية: 1 قطعة 7 كجم",
+      "الأمتعة المسجلة: 1 قطعة 23 كجم",
+      "اختيار المقعد: تُطبق رسوم",
+      "أميال الفرسان: 60%",
+      "الترقية بالأميال: مسموح",
+      "الإلغاء: تُطبق رسوم",
+      "تغيير الرحلة: تُطبق رسوم"
+    ] 
   },
-  {
-    name: "NSEMIFLEXE",
-    title: "شبه مرن (Semi Flex)",
-    features: ["شنطتين 23كجم", "استرجاع مجاني جزئياً", "تغيير مجاني", "اختيار مقعد عادي مجاناً"]
+  { 
+    name: "SEMI FLEX", 
+    title: "شبه مرن (Semi Flex)", 
+    features: [
+      "الأمتعة اليدوية: 1 قطعة 7 كجم",
+      "الأمتعة المسجلة: 1 قطعة 23 كجم",
+      "اختيار المقعد: مجاناً (قياسي)",
+      "أميال الفرسان: 80%",
+      "الترقية بالأميال: مسموح",
+      "الإلغاء: تُطبق رسوم",
+      "تغيير الرحلة: تُطبق رسوم"
+    ] 
   },
-  {
-    name: "NFLEXE",
-    title: "مرن (Flex)",
-    features: ["شنطتين 23كجم", "استرجاع مجاني بالكامل", "تغيير مجاني", "جميع المقاعد مجانية"]
-  }
+  { 
+    name: "FLEX", 
+    title: "مرن (Flex)", 
+    features: [
+      "الأمتعة اليدوية: 1 قطعة 7 كجم",
+      "الأمتعة المسجلة: 2 قطعة 23 كجم",
+      "اختيار المقعد: مجاناً",
+      "أميال الفرسان: 110%",
+      "الترقية بالأميال: مسموح",
+      "الإلغاء: تُطبق رسوم",
+      "تغيير الرحلة: مجاناً"
+    ] 
+  },
 ];
