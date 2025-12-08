@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, differenceInYears, isBefore, addYears } from "date-fns";
 import { 
   Plane, User, Phone, Copy, Plus, Trash2, 
-  ArrowRightLeft, Check, AlertCircle
+  ArrowRightLeft, Check, AlertCircle, Calendar
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { toast } from "sonner";
 import { airports } from "@/lib/airport-codes";
 import { 
-  Passenger, ContactInfo,
+  Passenger, ContactInfo, FlightSegment,
   generateANCommand, generateNMCommand, 
   generateBlock4Commands, packages
 } from "@/lib/command-generator";
@@ -31,25 +31,38 @@ export default function AmadeusEntryHelper() {
   // Progress Steps (1-5)
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
 
-  // Block 1 & 2: Flights (Merged)
-  const [deptDate, setDeptDate] = useState<string>(""); // YYYY-MM-DD string for native input
-  const [deptFrom, setDeptFrom] = useState("");
-  const [deptTo, setDeptTo] = useState("");
-  const [deptFromSearch, setDeptFromSearch] = useState("");
-  const [deptToSearch, setDeptToSearch] = useState("");
-  const [deptCommand, setDeptCommand] = useState("");
+  // Block 1: Flights (Multi-City)
+  const [segments, setSegments] = useState<FlightSegment[]>([
+    { id: "1", date: new Date(), from: "", to: "" }, // Outbound
+    { id: "2", date: new Date(), from: "", to: "" }  // Return (optional initially, but standard is round trip)
+  ]);
+  // We'll manage segments as an array. 
+  // UI Requirement: "Outbound and Return in one block". 
+  // Multi-city request: "Add more than 2 destinations".
+  // So we start with 2 segments (Outbound, Return). User can add more.
 
-  const [retDate, setRetDate] = useState<string>(""); // YYYY-MM-DD string for native input
-  const [retFrom, setRetFrom] = useState("");
-  const [retTo, setRetTo] = useState("");
-  const [retCommand, setRetCommand] = useState("");
+  // Helper for date input (string <-> Date)
+  const getDateStr = (date?: Date) => date ? format(date, "yyyy-MM-dd") : "";
+  const setSegmentDate = (index: number, dateStr: string) => {
+    const newSegments = [...segments];
+    if (dateStr) {
+      const newDate = parseISO(dateStr);
+      newSegments[index].date = newDate;
+      
+      // Validation: Check if date is before previous segment
+      if (index > 0 && newSegments[index-1].date && isBefore(newDate, newSegments[index-1].date)) {
+        toast.error("تنبيه: تاريخ هذه الرحلة قبل الرحلة السابقة!");
+      }
+    }
+    setSegments(newSegments);
+  };
 
   // Block 3: Passengers
   const [passengers, setPassengers] = useState<ExtendedPassenger[]>([
     { 
       id: "1", firstName: "", lastName: "", title: "MR", 
       nationality: "SAU", birthPlace: "SAU", docType: "I", gender: "M",
-      infantLastNameSelection: "MANUAL"
+      infantLastNameSelection: "MANUAL", infantGender: "M"
     }
   ]);
   const [nmCommands, setNmCommands] = useState("");
@@ -88,24 +101,6 @@ export default function AmadeusEntryHelper() {
 
   // --- Effects ---
 
-  // Generate Outbound
-  useEffect(() => {
-    if (deptDate && deptFrom && deptTo) {
-      setDeptCommand(generateANCommand({ date: parseISO(deptDate), from: deptFrom, to: deptTo }));
-    } else {
-      setDeptCommand("");
-    }
-  }, [deptDate, deptFrom, deptTo]);
-
-  // Generate Return
-  useEffect(() => {
-    if (retDate && retFrom && retTo) {
-      setRetCommand(generateANCommand({ date: parseISO(retDate), from: retFrom, to: retTo }));
-    } else {
-      setRetCommand("");
-    }
-  }, [retDate, retFrom, retTo]);
-
   // Generate NM & Block 4
   useEffect(() => {
     const validPax = passengers.filter(p => p.firstName && p.lastName);
@@ -130,20 +125,54 @@ export default function AmadeusEntryHelper() {
   }, [passengers, contact]);
 
   // --- Handlers ---
-  const reverseRoute = () => {
-    if (deptFrom && deptTo) {
-      setRetFrom(deptTo);
-      setRetTo(deptFrom);
-      toast.success("تم عكس المسار");
+  
+  // Flight Handlers
+  const addSegment = () => {
+    setSegments([...segments, { 
+      id: (segments.length + 1).toString(), 
+      date: new Date(), from: "", to: "" 
+    }]);
+  };
+
+  const removeSegment = (index: number) => {
+    if (segments.length > 1) {
+      const newSegments = [...segments];
+      newSegments.splice(index, 1);
+      setSegments(newSegments);
     }
   };
 
+  const updateSegment = (index: number, field: keyof FlightSegment, value: any) => {
+    const newSegments = [...segments];
+    newSegments[index] = { ...newSegments[index], [field]: value };
+    setSegments(newSegments);
+  };
+
+  const reverseRoute = (index: number) => {
+    if (index > 0) {
+      // Usually reverse means swap from/to of THIS segment? 
+      // Or swap with previous? 
+      // Let's assume swap From/To of current segment
+      const seg = segments[index];
+      updateSegment(index, "from", seg.to);
+      updateSegment(index, "to", seg.from);
+    } else if (segments.length >= 2) {
+      // If it's the first segment, maybe swap with second?
+      // Standard "Reverse" button usually swaps Outbound/Return locations
+      // Let's keep it simple: Swap From/To of current segment
+      const seg = segments[index];
+      updateSegment(index, "from", seg.to);
+      updateSegment(index, "to", seg.from);
+    }
+  };
+
+  // Passenger Handlers
   const addPassenger = () => {
     setPassengers([...passengers, { 
       id: (passengers.length + 1).toString(), 
       firstName: "", lastName: "", title: "MR",
       nationality: "SAU", birthPlace: "SAU", docType: "I", gender: "M",
-      infantLastNameSelection: "MANUAL"
+      infantLastNameSelection: "MANUAL", infantGender: "M"
     }]);
   };
 
@@ -158,6 +187,15 @@ export default function AmadeusEntryHelper() {
   const updatePax = (index: number, field: keyof ExtendedPassenger, value: any) => {
     const newPax = [...passengers];
     newPax[index] = { ...newPax[index], [field]: value };
+    
+    // Infant Age Validation
+    if (field === "infantDob" && value && segments[0].date) {
+      const age = differenceInYears(segments[0].date, value);
+      if (age >= 2) {
+        toast.error("تنبيه: عمر الرضيع يجب أن يكون أقل من سنتين!");
+      }
+    }
+
     setPassengers(newPax);
   };
 
@@ -167,32 +205,13 @@ export default function AmadeusEntryHelper() {
     newPax[index].infantLastNameSelection = selection;
     
     if (selection !== "MANUAL") {
-      // Find the selected passenger's last name
       const selectedPax = passengers.find(p => p.id === selection);
       if (selectedPax) {
-        // We don't actually store infantLastName in the main object based on the generator logic
-        // The generator uses the parent's last name for the infant: (INF{PARENT_LAST}/...)
-        // But if the user wants to specify a DIFFERENT last name for infant, our current generator
-        // assumes infant shares parent's last name: `(INF${pax.lastName.toUpperCase()}/...`
-        // Wait, the requirement says: "خيار اسم عائلة الرضيع يجب ان يتم تحديده اختياريا على احد اسماء عوائل المسافرين او ادخال يدوي"
-        // This implies the infant might have a different last name than the parent they are attached to?
-        // Standard Amadeus INF entry is attached to a parent. Usually shares name.
-        // If we need to support different last name, we might need to update generator.
-        // For now, let's assume this is just a UI helper to populate a field if we had one.
-        // BUT, looking at generator: `(INF${pax.lastName.toUpperCase()}/${pax.infantFirstName.toUpperCase()}/${infDobStr})`
-        // It uses the PARENT'S last name (pax.lastName).
-        // If the user wants to change the infant's last name, we can't currently do that with the standard format 
-        // unless we change the generator to accept an explicit infantLastName.
-        // Let's stick to the standard format where infant is attached to parent.
-        // If the user means "Attach infant to which parent?", that's different.
-        // But the prompt says "Infant surname option".
-        // Let's assume for now this is about WHICH parent the infant is attached to? 
-        // No, "infant surname".
-        // Let's just implement the UI logic. If they select a pax, we use that pax's last name?
-        // Actually, in Amadeus, `NM1 LAST/FIRST (INF LAST/FIRST)` is possible.
-        // I will update the generator logic implicitly by allowing `infantLastName` field if needed, 
-        // but for now let's just assume it's attached to the current pax.
+        newPax[index].infantLastName = selectedPax.lastName;
       }
+    } else {
+      // If manual, we keep whatever was typed or clear it? 
+      // Let's keep it, user can edit.
     }
     setPassengers(newPax);
   };
@@ -203,161 +222,102 @@ export default function AmadeusEntryHelper() {
       {/* Main Content Column */}
       <div className="flex-1 space-y-4 max-w-[700px]">
         
-        {/* --- Block 1 & 2: Flights (Merged) --- */}
+        {/* --- Block 1: Flights (Multi-City) --- */}
         <Card className="glass border-0 overflow-hidden shadow-lg">
-          <CardHeader className="bg-white/5 border-b border-white/10 py-2 px-4">
+          <CardHeader className="bg-white/5 border-b border-white/10 py-2 px-4 flex flex-row justify-between items-center">
             <CardTitle className="flex items-center gap-2 text-sm">
               <Plane className="w-4 h-4 text-secondary" />
               الرحلات (Flights)
             </CardTitle>
+            <Button onClick={addSegment} size="sm" className="h-6 text-[10px] bg-secondary/20 text-secondary hover:bg-secondary/30 border border-secondary/20 px-2">
+              <Plus className="w-3 h-3 ml-1" /> إضافة وجهة
+            </Button>
           </CardHeader>
           <CardContent className="p-3 space-y-4">
-            {/* Outbound Row */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold text-secondary bg-secondary/10 px-1.5 rounded">1. الذهاب</span>
-              </div>
-              <div className="grid grid-cols-12 gap-2 items-end">
-                <div className="col-span-4">
-                  <Label className="text-[9px] text-white/50 mb-1 block">التاريخ</Label>
-                  <Input 
-                    type="date" 
-                    value={deptDate} 
-                    onChange={(e) => setDeptDate(e.target.value)} 
-                    className="glass-input h-7 text-xs px-2 block w-full"
-                  />
-                </div>
-                <div className="col-span-4">
-                  <Label className="text-[9px] text-white/50 mb-1 block">من</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full justify-start text-right font-normal glass-input h-7 text-xs px-2 truncate">
-                        {deptFrom || "المغادرة"}
+            {segments.map((seg, idx) => (
+              <div key={idx} className="space-y-2 relative">
+                {idx > 0 && <div className="h-px bg-white/5 w-full my-2" />}
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-secondary bg-secondary/10 px-1.5 rounded">
+                      {idx + 1}. {idx === 0 ? "الذهاب" : idx === 1 ? "العودة" : `وجهة ${idx + 1}`}
+                    </span>
+                    {idx > 1 && (
+                      <Button variant="ghost" size="icon" onClick={() => removeSegment(idx)} className="h-4 w-4 text-red-400 hover:text-red-300">
+                        <Trash2 className="w-3 h-3" />
                       </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="p-0 w-[180px]">
-                      <div className="p-2">
-                        <Input placeholder="بحث..." value={deptFromSearch} onChange={e => setDeptFromSearch(e.target.value)} className="mb-2 h-7 text-xs" />
-                        <ScrollArea className="h-[120px]">
-                          {filterAirports(deptFromSearch).map(a => (
-                            <div key={a.code} className="p-1.5 hover:bg-secondary/20 cursor-pointer rounded text-xs" onClick={() => { setDeptFrom(a.code); setDeptFromSearch(""); }}>
-                              <span className="font-bold">{a.code}</span> - {a.cityAr}
-                            </div>
-                          ))}
-                        </ScrollArea>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
+                    )}
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={() => reverseRoute(idx)} className="h-5 w-5 text-white/50 hover:text-white" title="عكس المسار">
+                    <ArrowRightLeft className="w-3 h-3" />
+                  </Button>
                 </div>
-                <div className="col-span-4">
-                  <Label className="text-[9px] text-white/50 mb-1 block">إلى</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full justify-start text-right font-normal glass-input h-7 text-xs px-2 truncate">
-                        {deptTo || "الوصول"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="p-0 w-[180px]">
-                      <div className="p-2">
-                        <Input placeholder="بحث..." value={deptToSearch} onChange={e => setDeptToSearch(e.target.value)} className="mb-2 h-7 text-xs" />
-                        <ScrollArea className="h-[120px]">
-                          {filterAirports(deptToSearch).map(a => (
-                            <div key={a.code} className="p-1.5 hover:bg-secondary/20 cursor-pointer rounded text-xs" onClick={() => { setDeptTo(a.code); setDeptToSearch(""); }}>
-                              <span className="font-bold">{a.code}</span> - {a.cityAr}
-                            </div>
-                          ))}
-                        </ScrollArea>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
-              <Button 
-                size="sm" 
-                variant={deptCommand ? "secondary" : "outline"}
-                className="w-full h-7 text-xs font-bold mt-1"
-                disabled={!deptCommand}
-                onClick={() => copyToClipboard(deptCommand, 1)}
-              >
-                <Copy className="w-3 h-3 ml-1" /> نسخ أمر الذهاب (Copy Outbound)
-              </Button>
-            </div>
 
-            <div className="h-px bg-white/5 w-full" />
-
-            {/* Return Row */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold text-secondary bg-secondary/10 px-1.5 rounded">2. العودة</span>
+                <div className="grid grid-cols-12 gap-2 items-end">
+                  <div className="col-span-4">
+                    <Label className="text-[9px] text-white/50 mb-1 block">التاريخ</Label>
+                    <Input 
+                      type="date" 
+                      value={getDateStr(seg.date)} 
+                      onChange={(e) => setSegmentDate(idx, e.target.value)} 
+                      className="glass-input h-7 text-xs px-2 block w-full"
+                    />
+                  </div>
+                  <div className="col-span-4">
+                    <Label className="text-[9px] text-white/50 mb-1 block">من</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-full justify-start text-right font-normal glass-input h-7 text-xs px-2 truncate">
+                          {seg.from || "المغادرة"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="p-0 w-[180px]">
+                        <div className="p-2">
+                          <ScrollArea className="h-[120px]">
+                            {filterAirports("").map(a => (
+                              <div key={a.code} className="p-1.5 hover:bg-secondary/20 cursor-pointer rounded text-xs" onClick={() => updateSegment(idx, "from", a.code)}>
+                                <span className="font-bold">{a.code}</span> - {a.cityAr}
+                              </div>
+                            ))}
+                          </ScrollArea>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div className="col-span-4">
+                    <Label className="text-[9px] text-white/50 mb-1 block">إلى</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-full justify-start text-right font-normal glass-input h-7 text-xs px-2 truncate">
+                          {seg.to || "الوصول"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="p-0 w-[180px]">
+                        <div className="p-2">
+                          <ScrollArea className="h-[120px]">
+                            {filterAirports("").map(a => (
+                              <div key={a.code} className="p-1.5 hover:bg-secondary/20 cursor-pointer rounded text-xs" onClick={() => updateSegment(idx, "to", a.code)}>
+                                <span className="font-bold">{a.code}</span> - {a.cityAr}
+                              </div>
+                            ))}
+                          </ScrollArea>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
                 </div>
-                <Button variant="ghost" size="icon" onClick={reverseRoute} className="h-5 w-5 text-white/50 hover:text-white" title="عكس المسار">
-                  <ArrowRightLeft className="w-3 h-3" />
+                
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  className="w-full h-7 text-xs font-bold mt-1 bg-white/5 hover:bg-white/10 border-white/10"
+                  onClick={() => copyToClipboard(generateANCommand(seg), 1)}
+                >
+                  <Copy className="w-3 h-3 ml-1" /> نسخ أمر الرحلة {idx + 1}
                 </Button>
               </div>
-              <div className="grid grid-cols-12 gap-2 items-end">
-                <div className="col-span-4">
-                  <Label className="text-[9px] text-white/50 mb-1 block">التاريخ</Label>
-                  <Input 
-                    type="date" 
-                    value={retDate} 
-                    onChange={(e) => setRetDate(e.target.value)} 
-                    className="glass-input h-7 text-xs px-2 block w-full"
-                  />
-                </div>
-                <div className="col-span-4">
-                  <Label className="text-[9px] text-white/50 mb-1 block">من</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full justify-start text-right font-normal glass-input h-7 text-xs px-2 truncate">
-                        {retFrom || "المغادرة"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="p-0 w-[180px]">
-                      <div className="p-2">
-                        <ScrollArea className="h-[120px]">
-                          {filterAirports("").map(a => (
-                            <div key={a.code} className="p-1.5 hover:bg-secondary/20 cursor-pointer rounded text-xs" onClick={() => setRetFrom(a.code)}>
-                              <span className="font-bold">{a.code}</span> - {a.cityAr}
-                            </div>
-                          ))}
-                        </ScrollArea>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div className="col-span-4">
-                  <Label className="text-[9px] text-white/50 mb-1 block">إلى</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full justify-start text-right font-normal glass-input h-7 text-xs px-2 truncate">
-                        {retTo || "الوصول"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="p-0 w-[180px]">
-                      <div className="p-2">
-                        <ScrollArea className="h-[120px]">
-                          {filterAirports("").map(a => (
-                            <div key={a.code} className="p-1.5 hover:bg-secondary/20 cursor-pointer rounded text-xs" onClick={() => setRetTo(a.code)}>
-                              <span className="font-bold">{a.code}</span> - {a.cityAr}
-                            </div>
-                          ))}
-                        </ScrollArea>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
-              <Button 
-                size="sm" 
-                variant={retCommand ? "secondary" : "outline"}
-                className="w-full h-7 text-xs font-bold mt-1"
-                disabled={!retCommand}
-                onClick={() => copyToClipboard(retCommand, 2)}
-              >
-                <Copy className="w-3 h-3 ml-1" /> نسخ أمر العودة (Copy Return)
-              </Button>
-            </div>
+            ))}
           </CardContent>
         </Card>
 
@@ -475,16 +435,20 @@ export default function AmadeusEntryHelper() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="MANUAL">يدوي</SelectItem>
+                            <SelectItem value="MANUAL">يدوي / جديد</SelectItem>
                             {passengers.map(p => p.lastName && (
                               <SelectItem key={p.id} value={p.id}>{p.lastName}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
-                        {/* Note: In current generator logic, infant shares parent name. 
-                            If we want to support custom infant last name, we need to update generator.
-                            For now, this UI is just a placeholder for the requirement.
-                        */}
+                        {pax.infantLastNameSelection === "MANUAL" && (
+                          <Input 
+                            value={pax.infantLastName || ""} 
+                            onChange={(e) => updatePax(idx, "infantLastName", e.target.value.toUpperCase())}
+                            className="glass-input h-7 text-xs font-mono mt-1"
+                            placeholder="FAMILY NAME"
+                          />
+                        )}
                       </div>
                       <div className="col-span-4">
                         <Label className="text-[9px] text-white/50">تاريخ الميلاد</Label>
@@ -494,6 +458,18 @@ export default function AmadeusEntryHelper() {
                           onChange={(e) => updatePax(idx, "infantDob", e.target.value ? parseISO(e.target.value) : undefined)}
                           className="glass-input h-7 text-xs px-2 block w-full"
                         />
+                      </div>
+                      <div className="col-span-4">
+                        <Label className="text-[9px] text-white/50">جنس الرضيع</Label>
+                        <Select value={pax.infantGender || "M"} onValueChange={(v) => updatePax(idx, "infantGender", v)}>
+                          <SelectTrigger className="glass-input h-7 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="M">ذكر (MI)</SelectItem>
+                            <SelectItem value="F">أنثى (MY)</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                   )}
