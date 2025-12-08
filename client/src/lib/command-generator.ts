@@ -4,13 +4,13 @@ export interface Passenger {
   id: string;
   firstName: string;
   lastName: string;
-  title: string; // MR, MS, MSTR, MISS determines type
+  title: string; // MR, MS, MSTR, MISS
   hasInfant?: boolean;
   infantFirstName?: string;
   infantDob?: Date;
   dob?: Date; // For Child & SR DOCS
   nationality?: string; // Default SAU
-  docType?: "I" | "P" | "N"; // I=Iqama/National ID, P=Passport
+  docType?: "I" | "P"; // I=Iqama/National ID, P=Passport
   docNumber?: string;
   docExpiry?: Date;
   gender?: "M" | "F";
@@ -37,53 +37,61 @@ const getPaxType = (title: string): "ADT" | "CHD" => {
 
 // Block 1 & 2: AN Command
 export const generateANCommand = (segment: FlightSegment): string => {
+  if (!segment.date || !segment.from || !segment.to) return "";
   const dateStr = format(segment.date, "ddMMM").toUpperCase();
   return `AN ${dateStr} ${segment.from} ${segment.to}`;
 };
 
 // Block 3: NM Command
-export const generateNMCommand = (passengers: Passenger[]): string[] => {
-  const commands: string[] = [];
+export const generateNMCommand = (passengers: Passenger[]): string => {
+  const lines: string[] = [];
   
   passengers.forEach((pax) => {
     // Base NM line: NM1 LAST/FIRST TITLE
-    let command = `NM1 ${pax.lastName}/${pax.firstName} ${pax.title}`;
+    let line = `NM1 ${pax.lastName.toUpperCase()}/${pax.firstName.toUpperCase()} ${pax.title}`;
     
     // Infant logic: (INFALZUWAYDI/yasser/10JAN25)
+    // "Infant: must render exactly as (INF{PARENT_LAST}/{INF_FIRST}/{DDMONYY}) with no extra spaces inside INF token"
     if (pax.hasInfant && pax.infantFirstName && pax.infantDob) {
       const infDobStr = format(pax.infantDob, "ddMMMyy").toUpperCase();
-      const infStr = `(INF${pax.lastName}/${pax.infantFirstName}/${infDobStr})`;
-      command += ` ${infStr}`;
+      const infStr = `(INF${pax.lastName.toUpperCase()}/${pax.infantFirstName.toUpperCase()}/${infDobStr})`;
+      line += ` ${infStr}`;
     }
     
     // Child logic: (CHD/10MAY22)
+    // "Child: render as (CHD/{DDMONYY}) appended at end of that passenger's NM line."
     const type = getPaxType(pax.title);
     if (type === "CHD" && pax.dob) {
       const chdDobStr = format(pax.dob, "ddMMMyy").toUpperCase();
-      command += ` (CHD/${chdDobStr})`;
+      line += ` (CHD/${chdDobStr})`;
     }
     
-    commands.push(command);
+    lines.push(line);
   });
   
-  return commands;
+  return lines.join('\n');
 };
 
-// Block 4: Contact + Save + SR DOCS
-export const generateBlock4Commands = (contact: ContactInfo, passengers: Passenger[]): string[] => {
+// Block 4: Contact + Save + Docs
+export const generateBlock4Commands = (contact: ContactInfo, passengers: Passenger[]): string => {
   const commands: string[] = [];
   
   // 1. Contact Info (APN/APM/APE)
+  // "P list generation: automatically build P1,2,3 (comma-separated, no spaces)"
   const pRange = Array.from({ length: contact.paxCount }, (_, i) => i + 1).join(",");
   const paxStr = `/P${pRange}`;
   
   if (contact.mobile) {
+    // "Phone number: input should accept either full +9665xxxxxxxx or 05xxxxxxxx — normalize to +9665xxxxxxxx"
     let cleanMobile = contact.mobile.replace(/\D/g, "");
     if (cleanMobile.startsWith("0")) cleanMobile = cleanMobile.substring(1);
-    if (!cleanMobile.startsWith("966")) cleanMobile = "966" + cleanMobile;
+    if (cleanMobile.startsWith("966")) cleanMobile = cleanMobile.substring(3);
+    // Now cleanMobile should be 5xxxxxxxx
     
-    commands.push(`APN-SV/M+${cleanMobile}/${contact.language}${paxStr}`);
-    commands.push(`APM-SV/M+${cleanMobile}/${contact.language}${paxStr}`);
+    const finalMobile = `966${cleanMobile}`;
+    
+    commands.push(`APN-SV/M+${finalMobile}/${contact.language}${paxStr}`);
+    commands.push(`APM-SV/M+${finalMobile}/${contact.language}${paxStr}`);
   }
   
   if (contact.email) {
@@ -97,6 +105,7 @@ export const generateBlock4Commands = (contact: ContactInfo, passengers: Passeng
   commands.push("ER");
   
   // 3. SR DOCS
+  // "SR DOCS SV HK1-{IDTYPE}-SAU-{DOCNUMBER}-{GOVCODE}-{DOB}-{SEX}-{EXPIRY}-{LAST}/{FIRST}/P{index}"
   passengers.forEach((pax, index) => {
     const paxNum = index + 1;
     
@@ -112,44 +121,38 @@ export const generateBlock4Commands = (contact: ContactInfo, passengers: Passeng
       // Defaults
       const docType = p.docType || "I";
       const nat = (p.nationality || "SAU").toUpperCase();
-      const birthPlace = (p.birthPlace || "SAU").toUpperCase();
+      const birthPlace = (p.birthPlace || "SAU").toUpperCase(); // GOVCODE in template
       
       const docNum = p.docNumber;
-      const dob = isInfant && infDob ? format(infDob, "ddMMMyy").toUpperCase() : format(p.dob, "ddMMMyy").toUpperCase();
+      // Use infant DOB if infant, else pax DOB
+      const targetDob = isInfant && infDob ? infDob : p.dob;
+      const dobStr = format(targetDob, "ddMMMyy").toUpperCase();
+      
       const gender = p.gender;
       const expiry = format(p.docExpiry, "ddMMMyy").toUpperCase();
       
-      const name = isInfant && infName 
-        ? `${p.lastName}/${infName}` 
-        : `${p.lastName}/${p.firstName}`;
+      // Name logic
+      const lastName = p.lastName.toUpperCase();
+      const firstName = isInfant && infName ? infName.toUpperCase() : p.firstName.toUpperCase();
       
       const pRef = `/P${paxNum}`;
       
-      return `SR DOCS SV HK1-${docType}-${nat}-${docNum}-${birthPlace}-${dob}-${gender}-${expiry}-${name}${pRef}`;
+      return `SR DOCS SV HK1-${docType}-${nat}-${docNum}-${birthPlace}-${dobStr}-${gender}-${expiry}-${lastName}/${firstName}${pRef}`;
     };
 
     // Adult/Child DOCS
     const mainDocs = generateDocsLine(pax);
     if (mainDocs) commands.push(mainDocs);
     
-    // Infant DOCS (using parent's docs info but infant name/dob)
-    // Note: In reality infant needs own docs, but per prompt instructions we use what we have.
-    // If user didn't enter specific infant docs, we might skip or reuse.
-    // For now, we assume the single doc entry per passenger covers the main pax.
-    // If infant needs docs, we'd need separate inputs. 
-    // Prompt says: "For each passenger (including infants) has internal document model"
-    // But also "integrate docs into passengers".
-    // I will assume for now we generate docs for the main passenger.
-    // If infant docs are strictly required, we'd need extra fields.
-    // Based on "repeat the passenger who has infant twice... once for passenger, once for infant with same P2",
-    // I will generate a second line for infant if the main pax has docs, using infant DOB/Name.
+    // Infant DOCS
+    // "If infant is tied to P2, ensure SR DOCS contains both P2 parent line and infant line ending /P2."
     if (pax.hasInfant && pax.infantFirstName && pax.infantDob && mainDocs) {
        const infDocs = generateDocsLine(pax, true, pax.infantFirstName, pax.infantDob);
        if (infDocs) commands.push(infDocs);
     }
   });
   
-  return commands;
+  return commands.join('\n');
 };
 
 export const packages = [
