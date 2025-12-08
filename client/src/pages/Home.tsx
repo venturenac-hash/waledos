@@ -79,15 +79,18 @@ export default function Home() {
         )}
       </nav>
 
+      {/* Subtle Pulsing Title in Corner */}
+      <div className="fixed bottom-4 left-4 z-50 pointer-events-none select-none">
+        <div className="text-white/10 text-sm font-bold tracking-[0.2em] uppercase animate-pulse" style={{ fontFamily: 'sans-serif' }}>
+          Waleed's work
+        </div>
+      </div>
+
       <main className="container mx-auto px-4 pb-12 relative z-10 pt-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
           
           {/* Entry Helper Tab (Main) */}
           <TabsContent value="helper" className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
-            <div className="text-center mb-6">
-              <h2 className="text-5xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-secondary via-white to-secondary tracking-tight" style={{ fontFamily: 'sans-serif' }}>Waleed's work</h2>
-              <p className="text-white/40 text-sm tracking-widest uppercase mt-2">Professional Amadeus Assistant</p>
-            </div>
             <AmadeusEntryHelper />
           </TabsContent>
 

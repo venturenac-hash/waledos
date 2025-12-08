@@ -132,7 +132,6 @@ export default function AmadeusEntryHelper() {
     const validPax = passengers.filter(p => p.firstName && p.lastName);
     if (validPax.length > 0) {
       setNmCommands(generateNMCommand(validPax).join("\n"));
-      setContact(prev => ({ ...prev, paxCount: validPax.length }));
     } else {
       setNmCommands("");
     }
@@ -143,7 +142,9 @@ export default function AmadeusEntryHelper() {
     const hasDocs = validPax.some(p => p.docNumber);
     
     if (hasContact || hasDocs) {
-      setBlock4Commands(generateBlock4Commands(contact, validPax).join("\n"));
+      // Use derived paxCount for generation without updating state to avoid infinite loop
+      const effectiveContact = { ...contact, paxCount: validPax.length > 0 ? validPax.length : 1 };
+      setBlock4Commands(generateBlock4Commands(effectiveContact, validPax).join("\n"));
     } else {
       setBlock4Commands("");
     }
