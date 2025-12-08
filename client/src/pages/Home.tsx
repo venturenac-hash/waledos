@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Plane, AlertTriangle, BookOpen, Copy, Check, Menu, X, Star, Trash2 } from "lucide-react";
+import { Search, Plane, AlertTriangle, BookOpen, Copy, Check, Menu, X, Star, Trash2, Terminal } from "lucide-react";
 import { airports, Airport } from "@/lib/airport-codes";
 import { bookingSteps, commonErrors, shortcuts } from "@/lib/booking-data";
 import { cn } from "@/lib/utils";
@@ -11,10 +11,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
+import AmadeusEntryHelper from "@/components/AmadeusEntryHelper";
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState("booking");
+  const [activeTab, setActiveTab] = useState("helper");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [favorites, setFavorites] = useState<{ type: 'code' | 'command', value: string, label: string }[]>([]);
 
@@ -75,6 +76,9 @@ export default function Home() {
           
           {/* Desktop Menu */}
           <div className="hidden md:flex gap-6">
+            <Button variant="ghost" onClick={() => setActiveTab("helper")} className={cn("text-white hover:bg-white/10 gap-2", activeTab === "helper" && "bg-white/10")}>
+              <Terminal className="w-4 h-4 text-secondary" /> مساعد الإدخال
+            </Button>
             <Button variant="ghost" onClick={() => setActiveTab("booking")} className={cn("text-white hover:bg-white/10", activeTab === "booking" && "bg-white/10")}>خطوات الحجز</Button>
             <Button variant="ghost" onClick={() => setActiveTab("codes")} className={cn("text-white hover:bg-white/10", activeTab === "codes" && "bg-white/10")}>رموز المطارات</Button>
             <Button variant="ghost" onClick={() => setActiveTab("errors")} className={cn("text-white hover:bg-white/10", activeTab === "errors" && "bg-white/10")}>حل المشاكل</Button>
@@ -92,6 +96,7 @@ export default function Home() {
         {/* Mobile Menu */}
         {isMenuOpen && (
           <div className="md:hidden absolute top-full left-0 right-0 glass border-t border-white/10 p-4 flex flex-col gap-2 animate-in slide-in-from-top-5">
+            <Button variant="ghost" onClick={() => { setActiveTab("helper"); setIsMenuOpen(false); }} className="justify-start text-white gap-2"><Terminal className="w-4 h-4 text-secondary" /> مساعد الإدخال</Button>
             <Button variant="ghost" onClick={() => { setActiveTab("booking"); setIsMenuOpen(false); }} className="justify-start text-white">خطوات الحجز</Button>
             <Button variant="ghost" onClick={() => { setActiveTab("codes"); setIsMenuOpen(false); }} className="justify-start text-white">رموز المطارات</Button>
             <Button variant="ghost" onClick={() => { setActiveTab("errors"); setIsMenuOpen(false); }} className="justify-start text-white">حل المشاكل</Button>
@@ -103,6 +108,15 @@ export default function Home() {
       <main className="container mx-auto px-4 pb-12 relative z-10">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
           
+          {/* Entry Helper Tab */}
+          <TabsContent value="helper" className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
+            <div className="text-center mb-6">
+              <h2 className="text-4xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-white to-white/70">مساعد الإدخال الذكي</h2>
+              <p className="text-white/60">قم بتوليد أوامر الحجز الكاملة بخطوات بسيطة</p>
+            </div>
+            <AmadeusEntryHelper />
+          </TabsContent>
+
           {/* Booking Steps Tab */}
           <TabsContent value="booking" className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
             <div className="text-center mb-10">
