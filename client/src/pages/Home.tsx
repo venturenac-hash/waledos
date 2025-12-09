@@ -12,6 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 import { AmadeusEntryHelper } from "@/components/AmadeusEntryHelper";
+import { PnrAnalyzer } from "@/components/PnrAnalyzer";
+import { CommandSimulator } from "@/components/CommandSimulator";
 import { DataExplorer } from "@/components/DataExplorer";
 
 export default function Home() {
@@ -93,6 +95,8 @@ export default function Home() {
           {/* Entry Helper Tab (Main) */}
           <TabsContent value="helper" className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
             <AmadeusEntryHelper />
+            <PnrAnalyzer />
+            <CommandSimulator />
             <DataExplorer />
           </TabsContent>
 
