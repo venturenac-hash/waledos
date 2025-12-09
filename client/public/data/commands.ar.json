@@ -1,0 +1,532 @@
+[
+  {
+    "code": "JI0001AA/SU",
+    "category": "Sign-in",
+    "title": "تسجيل دخول لمجال واحد",
+    "description": "تسجيل الدخول لمجال عمل واحد برقم الموظف وكود الصلاحية.",
+    "details": "يستخدم للدخول إلى منطقة عمل واحدة (A) مع تمرير رقم الموظف وكود duty.",
+    "example": "JI0001AA/SU",
+    "keywords": ["تسجيل", "دخول", "work area", "sign in", "duty"],
+    "related": ["JI*0001AA/SU", "JO", "JD"]
+  },
+  {
+    "code": "JI*0001AA/SU",
+    "category": "Sign-in",
+    "title": "تسجيل دخول لكل المجالات",
+    "description": "تسجيل الدخول لكل مجالات العمل A–F بنفس كود الموظف.",
+    "details": "يفيد للبدء بسرعة في كل مجالات العمل الستة دون تكرار الأمر.",
+    "example": "JI*0001AA/SU",
+    "keywords": ["sign in all", "work areas", "login"],
+    "related": ["JD", "JO*"]
+  },
+  {
+    "code": "JO",
+    "category": "Sign-in",
+    "title": "خروج من المجال الحالي",
+    "description": "يخرج من مجال العمل النشط فقط.",
+    "details": "يحافظ على بقية المجالات بدون تغيير.",
+    "example": "JO",
+    "keywords": ["logout", "sign out"],
+    "related": ["JO*", "JD"]
+  },
+  {
+    "code": "JO*",
+    "category": "Sign-in",
+    "title": "خروج من كل المجالات",
+    "description": "تسجيل خروج من جميع مجالات العمل دفعة واحدة.",
+    "details": "يُنهي كل الجلسات المفتوحة A–F.",
+    "example": "JO*",
+    "keywords": ["logout all", "sign out all"],
+    "related": ["JI*0001AA/SU"]
+  },
+  {
+    "code": "JD",
+    "category": "Sign-in",
+    "title": "حالة مجالات العمل",
+    "description": "عرض حالة مجالات العمل ومن قام بتسجيل الدخول.",
+    "details": "يُظهر كل Work Areas وحالتها الحالية.",
+    "example": "JD",
+    "keywords": ["status", "work areas", "session"],
+    "related": ["JI0001AA/SU", "JO"]
+  },
+  {
+    "code": "JMB",
+    "category": "Sign-in",
+    "title": "التنقل بين المجالات",
+    "description": "التنقل من مجال عمل إلى آخر (مثلاً إلى B).",
+    "details": "يُستخدم لتحريك الجلسة الحالية إلى مجال آخر.",
+    "example": "JMB",
+    "keywords": ["switch area", "work area", "move"],
+    "related": ["JD"]
+  },
+  {
+    "code": "HE JI",
+    "category": "Help",
+    "title": "مساعدة أوامر الدخول",
+    "description": "يفتح صفحة المساعدة الخاصة بأوامر الدخول والخروج.",
+    "details": "يعرض توضيحات أماديوس الرسمية عن JI/JO/JD.",
+    "example": "HE JI",
+    "keywords": ["help", "sign in", "guide"],
+    "related": ["HE"]
+  },
+  {
+    "code": "MD",
+    "category": "Screen",
+    "title": "Move Down",
+    "description": "نزول صفحة واحدة في المخرجات.",
+    "details": "للتنقل لأسفل عند استعراض شاشة طويلة.",
+    "example": "MD",
+    "keywords": ["scroll", "down"],
+    "related": ["MU", "MB", "MT"]
+  },
+  {
+    "code": "MU",
+    "category": "Screen",
+    "title": "Move Up",
+    "description": "صعود صفحة واحدة في المخرجات.",
+    "details": "يعيد عرض الجزء السابق من الشاشة.",
+    "example": "MU",
+    "keywords": ["scroll", "up"],
+    "related": ["MD", "MB", "MT"]
+  },
+  {
+    "code": "MB",
+    "category": "Screen",
+    "title": "Move Bottom",
+    "description": "القفز لآخر صفحة في المخرجات.",
+    "details": "يُظهر نهاية الشاشة بسرعة.",
+    "example": "MB",
+    "keywords": ["bottom", "scroll end"],
+    "related": ["MT"]
+  },
+  {
+    "code": "MT",
+    "category": "Screen",
+    "title": "Move Top",
+    "description": "العودة لأول صفحة في المخرجات.",
+    "details": "مفيد عند قراءة سجل طويل.",
+    "example": "MT",
+    "keywords": ["top", "scroll start"],
+    "related": ["MB"]
+  },
+  {
+    "code": "IG",
+    "category": "Screen",
+    "title": "Ignore",
+    "description": "تجاهل التغييرات والرجوع بدون حفظ.",
+    "details": "يستخدم كثيراً قبل الخروج من PNR.",
+    "example": "IG",
+    "keywords": ["ignore", "cancel changes"],
+    "related": ["RT", "ER", "ET"]
+  },
+  {
+    "code": "AN",
+    "category": "Availability",
+    "title": "Availability Neutral",
+    "description": "عرض التوفر بين مدينتين في تاريخ محدد.",
+    "details": "صيغة قياسية لعرض الرحلات المحايدة.",
+    "example": "AN01MARDOHDXB",
+    "keywords": ["availability", "search", "flights"],
+    "related": ["SS", "TN"]
+  },
+  {
+    "code": "AN...1200",
+    "category": "Availability",
+    "title": "توفّر مع وقت",
+    "description": "تحديد ساعة معينة في الاستعلام عن التوفر.",
+    "details": "أضف الوقت في نهاية أمر AN.",
+    "example": "AN01MARDOHDXB1200",
+    "keywords": ["time", "availability"],
+    "related": ["AN"]
+  },
+  {
+    "code": "AN.../AEK",
+    "category": "Availability",
+    "title": "توفّر على شركة محددة",
+    "description": "فلترة التوفر على شركة طيران معينة.",
+    "details": "أضف /A يليها كود الناقل.",
+    "example": "AN01MARDOHDXB/AEK",
+    "keywords": ["airline filter", "availability"],
+    "related": ["AN"]
+  },
+  {
+    "code": "TN",
+    "category": "Timetable",
+    "title": "جدول الرحلات",
+    "description": "عرض جدول الرحلات لتاريخ اليوم أو تاريخ معين.",
+    "details": "عرض زمني دون توفر المقاعد.",
+    "example": "TNDOHDXB",
+    "keywords": ["timetable", "schedule"],
+    "related": ["TD", "TA", "TE"]
+  },
+  {
+    "code": "DO",
+    "category": "Flight info",
+    "title": "معلومات الرحلة",
+    "description": "عرض تفاصيل رحلة حسب رقم الرحلة.",
+    "details": "يشمل أوقات ومطارات الإقلاع/الوصول.",
+    "example": "DOEK203",
+    "keywords": ["flight info", "status"],
+    "related": ["AN", "TN"]
+  },
+  {
+    "code": "SS",
+    "category": "PNR",
+    "title": "بيع مقعد",
+    "description": "بيع مقعد من شاشة التوفر.",
+    "details": "مثلاً SS1B2 يحجز مقعد درجة B من السطر 2.",
+    "example": "SS1B2",
+    "keywords": ["sell", "segment", "booking"],
+    "related": ["AN", "NM", "AP"]
+  },
+  {
+    "code": "NM",
+    "category": "PNR",
+    "title": "إدخال اسم",
+    "description": "إدخال أسماء المسافرين في الحجز.",
+    "details": "صيغة اللقب/الاسم الأول مع اللقب.",
+    "example": "NM1HUSSAIN/ALI MR",
+    "keywords": ["name entry", "PNR mandatory"],
+    "related": ["AP", "TKOK"]
+  },
+  {
+    "code": "AP",
+    "category": "PNR",
+    "title": "هاتف",
+    "description": "إدخال رقم اتصال الوكالة أو الراكب.",
+    "details": "عنصر إلزامي قبل التسعير/الإصدار.",
+    "example": "AP 0500000000",
+    "keywords": ["phone", "contact"],
+    "related": ["APE", "NM"]
+  },
+  {
+    "code": "APE",
+    "category": "PNR",
+    "title": "بريد إلكتروني",
+    "description": "إدخال بريد إلكتروني في الحجز.",
+    "details": "يُسهل إرسال الإشعارات للراكب.",
+    "example": "APE-TEST@MAIL.COM",
+    "keywords": ["email", "contact"],
+    "related": ["AP"]
+  },
+  {
+    "code": "TKOK",
+    "category": "PNR",
+    "title": "ترتيب الإصدار",
+    "description": "التذاكر صالحة للإصدار فوراً (بدون مهلة).",
+    "details": "يعتبر عنصر تذاكر إلزامي قبل TTP.",
+    "example": "TKOK",
+    "keywords": ["ticketing", "time limit", "ok"],
+    "related": ["TKTL", "TTP", "FXP"]
+  },
+  {
+    "code": "TKTL/DDMMM",
+    "category": "PNR",
+    "title": "تحديد مهلة الإصدار",
+    "description": "تحديد آخر موعد لإصدار التذكرة.",
+    "details": "يستخدم لتعيين Time Limit قبل الإلغاء الآلي.",
+    "example": "TKTL/15MAR",
+    "keywords": ["ticketing time limit", "TTL"],
+    "related": ["TKOK"]
+  },
+  {
+    "code": "RF",
+    "category": "PNR",
+    "title": "Received From",
+    "description": "من أعطى التعليمات (اسم العميل أو الموظف).",
+    "details": "عنصر إلزامي قبل الحفظ.",
+    "example": "RF SAUDIA",
+    "keywords": ["received from", "mandatory"],
+    "related": ["ER", "ET"]
+  },
+  {
+    "code": "ER",
+    "category": "PNR",
+    "title": "End & Retrieve",
+    "description": "حفظ الحجز مع إعادة عرضه.",
+    "details": "يحفظ التعديلات ويعيد عرض الـPNR.",
+    "example": "ER",
+    "keywords": ["end retrieve", "save"],
+    "related": ["ET"]
+  },
+  {
+    "code": "ET",
+    "category": "PNR",
+    "title": "End & Transmit",
+    "description": "حفظ الحجز والخروج بدون إعادة العرض.",
+    "details": "مفيد بعد الانتهاء من التعديلات.",
+    "example": "ET",
+    "keywords": ["end transmit", "save"],
+    "related": ["ER"]
+  },
+  {
+    "code": "RT",
+    "category": "PNR",
+    "title": "استرجاع حجز",
+    "description": "استرجاع PNR برقم أو اسم.",
+    "details": "يمكن إضافة /SMITH للبحث بالاسم.",
+    "example": "RT ABC123",
+    "keywords": ["retrieve", "display PNR"],
+    "related": ["RTT", "RD"]
+  },
+  {
+    "code": "RTT",
+    "category": "PNR",
+    "title": "استرجاع بالتذكرة",
+    "description": "استرجاع حجز من رقم التذكرة (متاح ببعض البيئات).",
+    "details": "يحتاج صلاحيات/إعدادات خاصة.",
+    "example": "RTT/TKT1234567890",
+    "keywords": ["retrieve ticket", "tkt"],
+    "related": ["RT"]
+  },
+  {
+    "code": "RD",
+    "category": "PNR",
+    "title": "Redisplay",
+    "description": "إعادة عرض آخر شاشة أو آخر PNR.",
+    "details": "مفيد بعد أوامر فرعية كثيرة.",
+    "example": "RD",
+    "keywords": ["redisplay", "refresh"],
+    "related": ["RT"]
+  },
+  {
+    "code": "XE",
+    "category": "PNR",
+    "title": "إلغاء عنصر",
+    "description": "إلغاء سطر واحد (قطاع/خدمة).",
+    "details": "مثال XE2 لإلغاء السطر 2.",
+    "example": "XE2",
+    "keywords": ["cancel", "element"],
+    "related": ["XI"]
+  },
+  {
+    "code": "XI",
+    "category": "PNR",
+    "title": "إلغاء خط السير",
+    "description": "إلغاء كل القطاعات في الحجز.",
+    "details": "يستخدم مع الحجز قبل الإصدار غالباً.",
+    "example": "XI",
+    "keywords": ["cancel itinerary", "void segments"],
+    "related": ["XE"]
+  },
+  {
+    "code": "SR",
+    "category": "Services",
+    "title": "Special Service Request",
+    "description": "طلب خدمة خاصة مرتبطة بالراكب أو الرحلة.",
+    "details": "مثل كرسي متحرك أو وجبة خاصة أو INF.",
+    "example": "SR WCHR",
+    "keywords": ["SSR", "service", "wheelchair"],
+    "related": ["SR DOCS", "OSI"]
+  },
+  {
+    "code": "SR DOCS",
+    "category": "Services",
+    "title": "APIS Docs",
+    "description": "إدخال بيانات الوثائق في عنصر SSR.",
+    "details": "يُستخدم لإدخال الجواز/الهوية.",
+    "example": "SR DOCS SV HK1-P-...",
+    "keywords": ["docs", "apis", "passport"],
+    "related": ["SR"]
+  },
+  {
+    "code": "OSI",
+    "category": "Services",
+    "title": "Other Service Info",
+    "description": "ملاحظة لشركة الطيران لا تنتج EMD.",
+    "details": "معلومات خدمة تُعرض للناقل.",
+    "example": "OSI SV VIP PAX",
+    "keywords": ["remark", "airline note"],
+    "related": ["RM", "SR"]
+  },
+  {
+    "code": "RM",
+    "category": "Services",
+    "title": "Agent Remark",
+    "description": "ملاحظة داخلية لا تظهر للراكب أو الناقل.",
+    "details": "للاستخدام الداخلي بالوكالة.",
+    "example": "RM CALL PAX 2PM",
+    "keywords": ["remark", "internal"],
+    "related": ["OSI"]
+  },
+  {
+    "code": "FXP",
+    "category": "Pricing",
+    "title": "Price & create TST",
+    "description": "تسعير الرحلة وإنشاء TST.",
+    "details": "يعتمد على درجات الحجز الحالية.",
+    "example": "FXP",
+    "keywords": ["pricing", "tst", "ticketing"],
+    "related": ["FXX", "FXR", "TTP"]
+  },
+  {
+    "code": "FXX",
+    "category": "Pricing",
+    "title": "Informative pricing",
+    "description": "تسعير استعلامي بدون إنشاء TST.",
+    "details": "لمعرفة السعر فقط قبل الاعتماد.",
+    "example": "FXX",
+    "keywords": ["informative", "pricing"],
+    "related": ["FXP"]
+  },
+  {
+    "code": "FXR",
+    "category": "Pricing",
+    "title": "Reprice / rebook",
+    "description": "إعادة التسعير بعد تعديل الحجز.",
+    "details": "يحدث السعر بعد تغيير القطاعات.",
+    "example": "FXR",
+    "keywords": ["reprice", "rebook"],
+    "related": ["FXP", "FXU"]
+  },
+  {
+    "code": "FXH",
+    "category": "Pricing",
+    "title": "Price ancillaries",
+    "description": "تسعير استعلامي للخدمات الإضافية بدون TSM.",
+    "details": "مفيد لمعرفة تكلفة الحقائب/المقاعد.",
+    "example": "FXH",
+    "keywords": ["ancillary", "informative"],
+    "related": ["FXG"]
+  },
+  {
+    "code": "FXG",
+    "category": "Pricing",
+    "title": "Price ancillaries (TSM)",
+    "description": "تسعير فعلي للخدمات الإضافية وإنشاء TSM.",
+    "details": "يُستخدم لإصدار EMD لاحقاً.",
+    "example": "FXG",
+    "keywords": ["ancillary", "tsm"],
+    "related": ["TTM", "FXH"]
+  },
+  {
+    "code": "TST",
+    "category": "Ticketing",
+    "title": "عرض TST",
+    "description": "عرض سجل التسعير المخزن.",
+    "details": "يُظهر تفاصيل السعر والضرائب.",
+    "example": "TQT",
+    "keywords": ["tst", "pricing display"],
+    "related": ["FXP", "TQT"]
+  },
+  {
+    "code": "TQT",
+    "category": "Ticketing",
+    "title": "قناع TST",
+    "description": "عرض قناع الـTST بتفاصيل أعمق.",
+    "details": "مفيد للتحقق من الضرائب والجداول.",
+    "example": "TQT",
+    "keywords": ["tst mask", "fare"],
+    "related": ["TST"]
+  },
+  {
+    "code": "TTP",
+    "category": "Ticketing",
+    "title": "إصدار التذكرة",
+    "description": "إصدار التذاكر الإلكترونية للحجز.",
+    "details": "يتطلب عناصر PNR مكتملة وتذاكر مرتبة.",
+    "example": "TTP/RT",
+    "keywords": ["issue ticket", "eticket"],
+    "related": ["TTP/RT", "TTP/T2/RT", "TTM"]
+  },
+  {
+    "code": "TTP/RT",
+    "category": "Ticketing",
+    "title": "إصدار وإعادة العرض",
+    "description": "إصدار التذاكر وإعادة عرض الحجز مباشرة.",
+    "details": "يُستخدم بكثرة في الإصدارات اليومية.",
+    "example": "TTP/RT",
+    "keywords": ["issue", "retrieve"],
+    "related": ["TTP"]
+  },
+  {
+    "code": "TTM",
+    "category": "Ticketing",
+    "title": "إصدار EMD",
+    "description": "إصدار مستند إلكتروني للخدمات (EMD).",
+    "details": "يعمل مع الخدمات الإضافية بعد FXG.",
+    "example": "TTM",
+    "keywords": ["emd", "ancillary"],
+    "related": ["FXG", "TSM"]
+  },
+  {
+    "code": "TWD",
+    "category": "Ticketing",
+    "title": "عرض التذكرة الإلكترونية",
+    "description": "عرض سجل التذكرة (حالات الكوبونات، التواريخ...).",
+    "details": "يمكن التحديد بسطر FA/ FHE.",
+    "example": "TWD/L2",
+    "keywords": ["ticket display", "coupon status"],
+    "related": ["TTP", "TWD/Ln"]
+  },
+  {
+    "code": "QT",
+    "category": "Queues",
+    "title": "Queue total",
+    "description": "عرض عداد جميع الطوابير النشطة.",
+    "details": "يُظهر ملخص الطوابير للمكتب.",
+    "example": "QT",
+    "keywords": ["queues", "summary"],
+    "related": ["QTQ", "QV/40C40"]
+  },
+  {
+    "code": "QV/40C40",
+    "category": "Queues",
+    "title": "عرض قائمة طابور",
+    "description": "عرض قائمة الحجوزات في طابور وفئة محددة.",
+    "details": "مثال لطابور 40 فئة 40.",
+    "example": "QV/40C40",
+    "keywords": ["queue view", "list"],
+    "related": ["QS10C1", "QN"]
+  },
+  {
+    "code": "QS10C1",
+    "category": "Queues",
+    "title": "الدخول لطابور",
+    "description": "الدخول إلى طابور 10 فئة 1 لمعالجة الحجوزات.",
+    "details": "يُستخدم لمعالجة الحجوزات المتراكمة.",
+    "example": "QS10C1",
+    "keywords": ["queue select", "process"],
+    "related": ["QN", "QE/10C1"]
+  },
+  {
+    "code": "QN",
+    "category": "Queues",
+    "title": "الحجز التالي",
+    "description": "الانتقال للحجز التالي في الطابور.",
+    "details": "مفيد أثناء معالجة عدة حجوزات متتالية.",
+    "example": "QN",
+    "keywords": ["queue next"],
+    "related": ["QE/10C1"]
+  },
+  {
+    "code": "HE",
+    "category": "Help",
+    "title": "المساعدة الرئيسية",
+    "description": "فتح صفحة المساعدة العامة في أماديوس.",
+    "details": "نقطة البداية لكل شروحات HE.",
+    "example": "HE",
+    "keywords": ["help", "guide"],
+    "related": ["HE A", "HE AN", "HE NM"]
+  },
+  {
+    "code": "HE AN",
+    "category": "Help",
+    "title": "مساعدة AN",
+    "description": "شرح مفصل لأوامر التوفر.",
+    "details": "يشرح خيارات AN وفلاترها.",
+    "example": "HE AN",
+    "keywords": ["help", "availability"],
+    "related": ["AN"]
+  },
+  {
+    "code": "HE NM",
+    "category": "Help",
+    "title": "مساعدة الأسماء",
+    "description": "شرح إدخال أسماء المسافرين.",
+    "details": "صياغات مختلفة للأسماء والرضع.",
+    "example": "HE NM",
+    "keywords": ["help", "name entry"],
+    "related": ["NM"]
+  }
+]

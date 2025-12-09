@@ -1,0 +1,32 @@
+[
+  {
+    "code": "MR",
+    "meaning": "Adult male",
+    "notes": "Standard adult male title for name entries."
+  },
+  {
+    "code": "MRS",
+    "meaning": "Adult female (married)",
+    "notes": "Standard adult female title."
+  },
+  {
+    "code": "MS",
+    "meaning": "Adult female (single/unspecified)",
+    "notes": "Alternative adult female title."
+  },
+  {
+    "code": "MSTR",
+    "meaning": "Male child",
+    "notes": "Use with DOB for child entries."
+  },
+  {
+    "code": "MISS",
+    "meaning": "Female child",
+    "notes": "Use with DOB for child entries."
+  },
+  {
+    "code": "INF",
+    "meaning": "Infant indicator",
+    "notes": "Used within name entry for infants with DOB."
+  }
+]

@@ -1,0 +1,532 @@
+[
+  {
+    "code": "JI0001AA/SU",
+    "category": "Sign-in",
+    "title": "Sign in one area",
+    "description": "Log into a single work area with agent ID and duty code.",
+    "details": "Signs into work area A using the provided duty code.",
+    "example": "JI0001AA/SU",
+    "keywords": ["sign in", "work area", "login"],
+    "related": ["JI*0001AA/SU", "JO", "JD"]
+  },
+  {
+    "code": "JI*0001AA/SU",
+    "category": "Sign-in",
+    "title": "Sign in all areas",
+    "description": "Sign into all six work areas A–F with one entry.",
+    "details": "Saves time when you need every work area active.",
+    "example": "JI*0001AA/SU",
+    "keywords": ["sign in all", "work area"],
+    "related": ["JD", "JO*"]
+  },
+  {
+    "code": "JO",
+    "category": "Sign-in",
+    "title": "Sign out current",
+    "description": "Sign out from the current work area only.",
+    "details": "Leaves other areas untouched.",
+    "example": "JO",
+    "keywords": ["logout", "sign out"],
+    "related": ["JO*", "JD"]
+  },
+  {
+    "code": "JO*",
+    "category": "Sign-in",
+    "title": "Sign out all",
+    "description": "Sign out from all work areas at once.",
+    "details": "Ends all sessions A–F.",
+    "example": "JO*",
+    "keywords": ["logout all", "sign out all"],
+    "related": ["JI*0001AA/SU"]
+  },
+  {
+    "code": "JD",
+    "category": "Sign-in",
+    "title": "Work areas status",
+    "description": "Display who is signed into each work area.",
+    "details": "Shows status of all areas and agents.",
+    "example": "JD",
+    "keywords": ["status", "work areas", "session"],
+    "related": ["JI0001AA/SU", "JO"]
+  },
+  {
+    "code": "JMB",
+    "category": "Sign-in",
+    "title": "Move to area B",
+    "description": "Switch the active work area (e.g., to B).",
+    "details": "Moves the session to another area.",
+    "example": "JMB",
+    "keywords": ["switch area", "move"],
+    "related": ["JD"]
+  },
+  {
+    "code": "HE JI",
+    "category": "Help",
+    "title": "Help sign-in",
+    "description": "Help page for sign-in/out commands.",
+    "details": "Official Amadeus help for JI/JO/JD.",
+    "example": "HE JI",
+    "keywords": ["help", "sign in", "guide"],
+    "related": ["HE"]
+  },
+  {
+    "code": "MD",
+    "category": "Screen",
+    "title": "Move Down",
+    "description": "Scroll one page down in the display.",
+    "details": "Use in long outputs to move downward.",
+    "example": "MD",
+    "keywords": ["scroll", "down"],
+    "related": ["MU", "MB", "MT"]
+  },
+  {
+    "code": "MU",
+    "category": "Screen",
+    "title": "Move Up",
+    "description": "Scroll one page up in the display.",
+    "details": "Moves back to previous page.",
+    "example": "MU",
+    "keywords": ["scroll", "up"],
+    "related": ["MD", "MB", "MT"]
+  },
+  {
+    "code": "MB",
+    "category": "Screen",
+    "title": "Move Bottom",
+    "description": "Jump to the last page of the output.",
+    "details": "Shows the end of a long screen.",
+    "example": "MB",
+    "keywords": ["bottom", "scroll end"],
+    "related": ["MT"]
+  },
+  {
+    "code": "MT",
+    "category": "Screen",
+    "title": "Move Top",
+    "description": "Jump back to the first page.",
+    "details": "Useful while reading long logs.",
+    "example": "MT",
+    "keywords": ["top", "scroll start"],
+    "related": ["MB"]
+  },
+  {
+    "code": "IG",
+    "category": "Screen",
+    "title": "Ignore",
+    "description": "Ignore changes and return without saving.",
+    "details": "Used often before exiting a PNR.",
+    "example": "IG",
+    "keywords": ["ignore", "cancel changes"],
+    "related": ["RT", "ER", "ET"]
+  },
+  {
+    "code": "AN",
+    "category": "Availability",
+    "title": "Availability Neutral",
+    "description": "Display flight availability between two cities for a date.",
+    "details": "Neutral availability display.",
+    "example": "AN01MARDOHDXB",
+    "keywords": ["availability", "search", "flights"],
+    "related": ["SS", "TN"]
+  },
+  {
+    "code": "AN...1200",
+    "category": "Availability",
+    "title": "Availability with time",
+    "description": "Add a time filter to availability.",
+    "details": "Append the time at the end of the AN command.",
+    "example": "AN01MARDOHDXB1200",
+    "keywords": ["time", "availability"],
+    "related": ["AN"]
+  },
+  {
+    "code": "AN.../AEK",
+    "category": "Availability",
+    "title": "Availability by airline",
+    "description": "Filter availability by airline code.",
+    "details": "Use /A followed by carrier code.",
+    "example": "AN01MARDOHDXB/AEK",
+    "keywords": ["airline filter", "availability"],
+    "related": ["AN"]
+  },
+  {
+    "code": "TN",
+    "category": "Timetable",
+    "title": "Timetable neutral",
+    "description": "Show timetable for today or a specific date.",
+    "details": "Schedule without seat availability.",
+    "example": "TNDOHDXB",
+    "keywords": ["timetable", "schedule"],
+    "related": ["TD", "TA", "TE"]
+  },
+  {
+    "code": "DO",
+    "category": "Flight info",
+    "title": "Flight information",
+    "description": "Display details by flight number.",
+    "details": "Shows depart/arrive times and airports.",
+    "example": "DOEK203",
+    "keywords": ["flight info", "status"],
+    "related": ["AN", "TN"]
+  },
+  {
+    "code": "SS",
+    "category": "PNR",
+    "title": "Sell segment",
+    "description": "Sell a seat from availability.",
+    "details": "e.g., SS1B2 sells one B-class seat from line 2.",
+    "example": "SS1B2",
+    "keywords": ["sell", "segment", "booking"],
+    "related": ["AN", "NM", "AP"]
+  },
+  {
+    "code": "NM",
+    "category": "PNR",
+    "title": "Name entry",
+    "description": "Enter passenger names into the PNR.",
+    "details": "Surname/first name with title format.",
+    "example": "NM1HUSSAIN/ALI MR",
+    "keywords": ["name entry", "mandatory"],
+    "related": ["AP", "TKOK"]
+  },
+  {
+    "code": "AP",
+    "category": "PNR",
+    "title": "Phone contact",
+    "description": "Enter phone contact for agency or passenger.",
+    "details": "Mandatory before pricing/ticketing.",
+    "example": "AP 0500000000",
+    "keywords": ["phone", "contact"],
+    "related": ["APE", "NM"]
+  },
+  {
+    "code": "APE",
+    "category": "PNR",
+    "title": "Email contact",
+    "description": "Enter passenger email.",
+    "details": "Used for notifications to pax.",
+    "example": "APE-TEST@MAIL.COM",
+    "keywords": ["email", "contact"],
+    "related": ["AP"]
+  },
+  {
+    "code": "TKOK",
+    "category": "PNR",
+    "title": "Ticketing OK",
+    "description": "Ticketing arrangement OK (issue anytime).",
+    "details": "Ticketing element required before TTP.",
+    "example": "TKOK",
+    "keywords": ["ticketing", "time limit", "ok"],
+    "related": ["TKTL", "TTP", "FXP"]
+  },
+  {
+    "code": "TKTL/DDMMM",
+    "category": "PNR",
+    "title": "Ticketing time limit",
+    "description": "Set a deadline for ticketing.",
+    "details": "Defines TTL before auto-cancel.",
+    "example": "TKTL/15MAR",
+    "keywords": ["TTL", "ticketing deadline"],
+    "related": ["TKOK"]
+  },
+  {
+    "code": "RF",
+    "category": "PNR",
+    "title": "Received From",
+    "description": "Who provided the instruction (customer/agent).",
+    "details": "Mandatory element before saving.",
+    "example": "RF SAUDIA",
+    "keywords": ["received from", "mandatory"],
+    "related": ["ER", "ET"]
+  },
+  {
+    "code": "ER",
+    "category": "PNR",
+    "title": "End & Retrieve",
+    "description": "Save the PNR and redisplay it.",
+    "details": "Saves changes and shows the record.",
+    "example": "ER",
+    "keywords": ["end retrieve", "save"],
+    "related": ["ET"]
+  },
+  {
+    "code": "ET",
+    "category": "PNR",
+    "title": "End & Transmit",
+    "description": "Save and exit without redisplay.",
+    "details": "Common after finishing edits.",
+    "example": "ET",
+    "keywords": ["end transmit", "save"],
+    "related": ["ER"]
+  },
+  {
+    "code": "RT",
+    "category": "PNR",
+    "title": "Retrieve PNR",
+    "description": "Retrieve by record locator or name.",
+    "details": "Add /SMITH to search by name.",
+    "example": "RT ABC123",
+    "keywords": ["retrieve", "display PNR"],
+    "related": ["RTT", "RD"]
+  },
+  {
+    "code": "RTT",
+    "category": "PNR",
+    "title": "Retrieve by ticket",
+    "description": "Retrieve a PNR using ticket number (environment-specific).",
+    "details": "Requires proper setup/permissions.",
+    "example": "RTT/TKT1234567890",
+    "keywords": ["retrieve ticket", "tkt"],
+    "related": ["RT"]
+  },
+  {
+    "code": "RD",
+    "category": "PNR",
+    "title": "Redisplay",
+    "description": "Redisplay last screen or PNR.",
+    "details": "Use after many subcommands.",
+    "example": "RD",
+    "keywords": ["redisplay", "refresh"],
+    "related": ["RT"]
+  },
+  {
+    "code": "XE",
+    "category": "PNR",
+    "title": "Cancel element",
+    "description": "Cancel a single line (segment/service).",
+    "details": "XE2 cancels line 2.",
+    "example": "XE2",
+    "keywords": ["cancel", "element"],
+    "related": ["XI"]
+  },
+  {
+    "code": "XI",
+    "category": "PNR",
+    "title": "Cancel itinerary",
+    "description": "Cancel all segments in the PNR.",
+    "details": "Used prior to ticketing if abandoning.",
+    "example": "XI",
+    "keywords": ["cancel itinerary", "void segments"],
+    "related": ["XE"]
+  },
+  {
+    "code": "SR",
+    "category": "Services",
+    "title": "Special Service Request",
+    "description": "Request a special service for pax/segment.",
+    "details": "Wheelchair, infant, meal, etc.",
+    "example": "SR WCHR",
+    "keywords": ["SSR", "service", "wheelchair"],
+    "related": ["SR DOCS", "OSI"]
+  },
+  {
+    "code": "SR DOCS",
+    "category": "Services",
+    "title": "APIS Docs",
+    "description": "Enter document details as SSR.",
+    "details": "Used for passport/ID data.",
+    "example": "SR DOCS SV HK1-P-...",
+    "keywords": ["docs", "apis", "passport"],
+    "related": ["SR"]
+  },
+  {
+    "code": "OSI",
+    "category": "Services",
+    "title": "Other Service Info",
+    "description": "Remark to airline that does not create EMD.",
+    "details": "Displays to carrier only.",
+    "example": "OSI SV VIP PAX",
+    "keywords": ["remark", "airline note"],
+    "related": ["RM", "SR"]
+  },
+  {
+    "code": "RM",
+    "category": "Services",
+    "title": "Agent remark",
+    "description": "Internal note not shown to pax or airline.",
+    "details": "Use for internal agency notes.",
+    "example": "RM CALL PAX 2PM",
+    "keywords": ["remark", "internal"],
+    "related": ["OSI"]
+  },
+  {
+    "code": "FXP",
+    "category": "Pricing",
+    "title": "Price & create TST",
+    "description": "Price itinerary and store TST.",
+    "details": "Uses current booking classes.",
+    "example": "FXP",
+    "keywords": ["pricing", "tst", "ticketing"],
+    "related": ["FXX", "FXR", "TTP"]
+  },
+  {
+    "code": "FXX",
+    "category": "Pricing",
+    "title": "Informative pricing",
+    "description": "Price without creating TST.",
+    "details": "For quote only before committing.",
+    "example": "FXX",
+    "keywords": ["informative", "pricing"],
+    "related": ["FXP"]
+  },
+  {
+    "code": "FXR",
+    "category": "Pricing",
+    "title": "Reprice/rebook",
+    "description": "Reprice after itinerary changes.",
+    "details": "Updates fare after modifications.",
+    "example": "FXR",
+    "keywords": ["reprice", "rebook"],
+    "related": ["FXP", "FXU"]
+  },
+  {
+    "code": "FXH",
+    "category": "Pricing",
+    "title": "Price ancillaries (informative)",
+    "description": "Informative pricing for ancillaries without TSM.",
+    "details": "Use to preview bag/seat costs.",
+    "example": "FXH",
+    "keywords": ["ancillary", "informative"],
+    "related": ["FXG"]
+  },
+  {
+    "code": "FXG",
+    "category": "Pricing",
+    "title": "Price ancillaries (TSM)",
+    "description": "Actual ancillary pricing and create TSM.",
+    "details": "Followed by TTM to issue EMD.",
+    "example": "FXG",
+    "keywords": ["ancillary", "tsm"],
+    "related": ["TTM", "FXH"]
+  },
+  {
+    "code": "TST",
+    "category": "Ticketing",
+    "title": "Ticketing stored",
+    "description": "Display stored pricing record.",
+    "details": "Shows fare/tx details.",
+    "example": "TQT",
+    "keywords": ["tst", "pricing display"],
+    "related": ["FXP", "TQT"]
+  },
+  {
+    "code": "TQT",
+    "category": "Ticketing",
+    "title": "TST mask",
+    "description": "Detailed TST mask display.",
+    "details": "Useful for tax/fare breakdown.",
+    "example": "TQT",
+    "keywords": ["tst mask", "fare"],
+    "related": ["TST"]
+  },
+  {
+    "code": "TTP",
+    "category": "Ticketing",
+    "title": "Issue e-ticket",
+    "description": "Issue tickets for the PNR.",
+    "details": "Requires complete PNR and ticketing element.",
+    "example": "TTP/RT",
+    "keywords": ["issue ticket", "eticket"],
+    "related": ["TTP/RT", "TTP/T2/RT", "TTM"]
+  },
+  {
+    "code": "TTP/RT",
+    "category": "Ticketing",
+    "title": "Issue & retrieve",
+    "description": "Issue and redisplay the PNR.",
+    "details": "Common daily issuance pattern.",
+    "example": "TTP/RT",
+    "keywords": ["issue", "retrieve"],
+    "related": ["TTP"]
+  },
+  {
+    "code": "TTM",
+    "category": "Ticketing",
+    "title": "Issue EMD",
+    "description": "Issue an EMD for services.",
+    "details": "Use with ancillaries after FXG.",
+    "example": "TTM",
+    "keywords": ["emd", "ancillary"],
+    "related": ["FXG", "TSM"]
+  },
+  {
+    "code": "TWD",
+    "category": "Ticketing",
+    "title": "Ticket display",
+    "description": "Display e-ticket record (coupon status, dates).",
+    "details": "Can specify FA/FHE line via /Ln.",
+    "example": "TWD/L2",
+    "keywords": ["ticket display", "coupon status"],
+    "related": ["TTP", "TWD/Ln"]
+  },
+  {
+    "code": "QT",
+    "category": "Queues",
+    "title": "Queue total",
+    "description": "Summary of active queues for the office.",
+    "details": "Shows counts per queue.",
+    "example": "QT",
+    "keywords": ["queues", "summary"],
+    "related": ["QTQ", "QV/40C40"]
+  },
+  {
+    "code": "QV/40C40",
+    "category": "Queues",
+    "title": "Queue view list",
+    "description": "List PNRs in a specific queue and category.",
+    "details": "Example queue 40 cat 40.",
+    "example": "QV/40C40",
+    "keywords": ["queue view", "list"],
+    "related": ["QS10C1", "QN"]
+  },
+  {
+    "code": "QS10C1",
+    "category": "Queues",
+    "title": "Queue select",
+    "description": "Enter queue 10 category 1 to process PNRs.",
+    "details": "Work through queued records.",
+    "example": "QS10C1",
+    "keywords": ["queue select", "process"],
+    "related": ["QN", "QE/10C1"]
+  },
+  {
+    "code": "QN",
+    "category": "Queues",
+    "title": "Queue next",
+    "description": "Go to next PNR in the queue.",
+    "details": "Use while processing multiple items.",
+    "example": "QN",
+    "keywords": ["queue next"],
+    "related": ["QE/10C1"]
+  },
+  {
+    "code": "HE",
+    "category": "Help",
+    "title": "Help main",
+    "description": "Open Amadeus main help.",
+    "details": "Starting point for HE topics.",
+    "example": "HE",
+    "keywords": ["help", "guide"],
+    "related": ["HE A", "HE AN", "HE NM"]
+  },
+  {
+    "code": "HE AN",
+    "category": "Help",
+    "title": "Help AN",
+    "description": "Detailed help for availability entries.",
+    "details": "Covers filters and options for AN.",
+    "example": "HE AN",
+    "keywords": ["help", "availability"],
+    "related": ["AN"]
+  },
+  {
+    "code": "HE NM",
+    "category": "Help",
+    "title": "Help names",
+    "description": "Name entry help.",
+    "details": "Formats for names and infants.",
+    "example": "HE NM",
+    "keywords": ["help", "name entry"],
+    "related": ["NM"]
+  }
+]

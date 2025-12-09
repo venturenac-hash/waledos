@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 import { AmadeusEntryHelper } from "@/components/AmadeusEntryHelper";
+import { DataExplorer } from "@/components/DataExplorer";
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -92,6 +93,7 @@ export default function Home() {
           {/* Entry Helper Tab (Main) */}
           <TabsContent value="helper" className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
             <AmadeusEntryHelper />
+            <DataExplorer />
           </TabsContent>
 
           {/* Favorites Tab */}
