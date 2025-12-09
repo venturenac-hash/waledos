@@ -7,6 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useStaticData } from "@/hooks/useStaticData";
 import { CommandEntry, ErrorEntry, TopicEntry, CouponStatusEntry, AirportEntry, FareLetterEntry, NameTitleEntry } from "@/lib/staticData";
 import { Loader2, AlertTriangle } from "lucide-react";
+import { buildFuse, buildSearchItems, SearchItem } from "@/lib/searchIndex";
 
 type DatasetKey = "commands" | "errors" | "topics" | "coupons" | "airports" | "fareLetters" | "nameTitles";
 
@@ -90,28 +91,27 @@ export function DataExplorer() {
 
   const q = query.trim().toLowerCase();
 
+  const fuse = useMemo(() => {
+    if (!data) return null;
+    return buildFuse(buildSearchItems(data.commands.ar, data.errors.ar, data.topics.ar, data.airports));
+  }, [data]);
+
   const results = useMemo(() => {
-    if (!data) return [];
+    if (!data || !fuse) return [];
     if (!q) return [];
-    switch (active) {
-      case "commands":
-        return data.commands.ar.filter(c => matchCommand(c, q)).slice(0, MAX_RESULTS);
-      case "errors":
-        return data.errors.ar.filter(e => matchError(e, q)).slice(0, MAX_RESULTS);
-      case "topics":
-        return data.topics.ar.filter(t => matchTopic(t, q)).slice(0, MAX_RESULTS);
-      case "coupons":
-        return data.couponStatus.ar.filter(c => matchCoupon(c, q)).slice(0, MAX_RESULTS);
-      case "airports":
-        return data.airports.filter(a => matchAirport(a, q)).slice(0, MAX_RESULTS);
-      case "fareLetters":
-        return data.fareLetters.filter(f => matchFareLetter(f, q)).slice(0, MAX_RESULTS);
-      case "nameTitles":
-        return data.nameTitles.filter(n => matchNameTitle(n, q)).slice(0, MAX_RESULTS);
-      default:
-        return [];
+    if (active === "commands") return data.commands.ar.filter(c => matchCommand(c, q)).slice(0, MAX_RESULTS);
+    if (active === "errors") return data.errors.ar.filter(e => matchError(e, q)).slice(0, MAX_RESULTS);
+    if (active === "topics") return data.topics.ar.filter(t => matchTopic(t, q)).slice(0, MAX_RESULTS);
+    if (active === "coupons") return data.couponStatus.ar.filter(c => matchCoupon(c, q)).slice(0, MAX_RESULTS);
+    if (active === "fareLetters") return data.fareLetters.filter(f => matchFareLetter(f, q)).slice(0, MAX_RESULTS);
+    if (active === "nameTitles") return data.nameTitles.filter(n => matchNameTitle(n, q)).slice(0, MAX_RESULTS);
+    if (active === "airports") {
+      // For airports, use Fuse for fuzzy search
+      const airportItems = fuse.search(q).filter(r => r.item.type === "airport").slice(0, MAX_RESULTS);
+      return airportItems.map(r => r.item);
     }
-  }, [data, q, active]);
+    return [];
+  }, [data, fuse, q, active]);
 
   return (
     <Card className="border-white/10 bg-white/5 backdrop-blur-md shadow-xl">
