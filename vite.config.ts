@@ -8,8 +8,12 @@ import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
 
 const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime()];
 
+const isPages = process.env.GITHUB_PAGES === "true";
+
 export default defineConfig({
   plugins,
+  // Ensure assets resolve correctly when hosted under /waledos on GitHub Pages
+  base: isPages ? "/waledos/" : "/",
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),
