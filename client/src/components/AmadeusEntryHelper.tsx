@@ -7,17 +7,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Copy, Plus, Trash2, ArrowRightLeft, Plane, User, Phone, FileText, CheckCircle2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { format, addDays, differenceInMonths, differenceInYears } from "date-fns";
-import { 
-  generateANCommand, 
-  generateNMCommand, 
-  generateBlock4Commands, 
-  packages,
+import {
+  generateANCommand,
+  generateNMCommand,
+  generateBlock4Commands,
   Passenger,
   FlightSegment,
-  ContactInfo
+  ContactInfo,
 } from "@/lib/command-generator";
 import { AirportSelector } from "./AirportSelector";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { fareFamilies } from "@/lib/fare-packages";
 
 export function AmadeusEntryHelper() {
   // --- State ---
@@ -544,35 +544,87 @@ export function AmadeusEntryHelper() {
               الباقات (Packages) .5
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-4 gap-2">
-              {packages.map((pkg) => (
-                <TooltipProvider key={pkg.name}>
-                  <Tooltip delayDuration={0}>
-                    <TooltipTrigger asChild>
-                      <Button 
-                        variant="outline" 
-                        className="h-10 text-xs border-white/10 bg-black/20 hover:bg-blue-500/20 hover:text-blue-300 hover:border-blue-500/50 transition-all"
-                        onClick={() => handleCopy(`FXB/FF-${pkg.name}`, `باقة ${pkg.title}`)}
-                      >
-                        {pkg.title}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent className="bg-slate-900 border-white/10 text-white p-3 max-w-xs">
-                      <div className="font-bold mb-2 text-yellow-400">{pkg.title}</div>
-                      <ul className="space-y-1 text-[10px]">
-                        {pkg.features.map((f, i) => (
-                          <li key={i} className="flex items-start gap-1.5">
-                            <CheckCircle2 className="w-3 h-3 text-green-400 shrink-0 mt-0.5" />
-                            <span className="text-white/80">{f}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              ))}
-            </div>
+          <CardContent className="space-y-6">
+            {fareFamilies.map(family => (
+              <div key={family.id} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full bg-gradient-to-r ${family.accent}`} />
+                    <h3 className="text-sm font-semibold text-white">{family.title}</h3>
+                  </div>
+                  <span className="text-[11px] text-white/60 hidden md:block">مرّر بالفأرة لرؤية بيانات الباقة</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                  {family.packages.map(pkg => (
+                    <TooltipProvider key={pkg.code} delayDuration={0}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div
+                            className="group relative overflow-hidden rounded-lg border border-white/10 bg-gradient-to-br from-white/5 to-white/0 p-3 hover:border-white/30 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/30 transition-all cursor-pointer"
+                            tabIndex={0}
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <div>
+                                <div className="text-sm font-bold text-white">{pkg.label}</div>
+                                <div className="text-[11px] text-white/60">{family.title}</div>
+                              </div>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                className="h-8 text-[11px] border-white/20 bg-white/5 hover:bg-white/10"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleCopy(`FXB/FF-${pkg.code}`, `باقة ${pkg.label}`);
+                                }}
+                              >
+                                نسخ
+                              </Button>
+                            </div>
+
+                            <div className="mt-3 text-[11px] text-white/60 leading-relaxed">
+                              {pkg.features.slice(0, 3).map(f => f.value).join(" • ")}
+                            </div>
+
+                            {/* Inline fallback for touch devices */}
+                            <div className="mt-3 grid grid-cols-1 gap-1 text-[11px] text-white/70 md:hidden">
+                              {pkg.features.slice(0, 5).map(feature => (
+                                <div key={feature.label} className="flex items-center justify-between gap-2">
+                                  <span className="text-white/50">{feature.label}</span>
+                                  <span className="font-semibold text-white">{feature.value}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-slate-900 border-white/10 text-white p-4 max-w-md">
+                          <div className="font-bold text-sm mb-2 text-yellow-300">{pkg.label}</div>
+                          <div className="grid grid-cols-1 gap-1 text-[11px]">
+                            {pkg.features.map(feature => (
+                              <div key={feature.label} className="flex items-center justify-between gap-3">
+                                <span className="text-white/50">{feature.label}</span>
+                                <span className="text-white font-semibold">{feature.value}</span>
+                              </div>
+                            ))}
+                          </div>
+                          {(pkg.footnote || family.footnote) && (
+                            <div className="mt-3 text-[10px] text-white/50 leading-snug">
+                              {pkg.footnote ?? family.footnote}
+                            </div>
+                          )}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  ))}
+                </div>
+
+                {family.footnote && (
+                  <div className="text-[10px] text-white/40 leading-snug">
+                    {family.footnote}
+                  </div>
+                )}
+              </div>
+            ))}
           </CardContent>
         </Card>
 
