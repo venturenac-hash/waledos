@@ -1,0 +1,11 @@
+[
+  { "code": "O", "label": "Open", "description": "الكوبون مفتوح وصالح للاستخدام." },
+  { "code": "A", "label": "Airport Control", "description": "الكوبون تحت سيطرة المطار (عادةً عند إنهاء إجراءات السفر)." },
+  { "code": "F", "label": "Flown", "description": "تم استخدام الكوبون والسفر به." },
+  { "code": "E", "label": "Exchanged", "description": "تم استبدال الكوبون بتذكرة جديدة." },
+  { "code": "V", "label": "Void", "description": "الكوبون ملغي ولم يعد صالحاً." },
+  { "code": "S", "label": "Suspended", "description": "الكوبون موقوف مؤقتاً (يحتاج معالجة يدوية)." },
+  { "code": "Z", "label": "Closed", "description": "الكوبون مغلق (اكتمل استخدامه أو تمت معالجته)." },
+  { "code": "U", "label": "Unused", "description": "الكوبون غير مستخدم بعد." },
+  { "code": "R", "label": "Refunded", "description": "الكوبون مُسترد وتم إرجاع قيمته." }
+]

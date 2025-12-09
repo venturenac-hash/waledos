@@ -1,0 +1,63 @@
+[
+  {
+    "id": "sign-in-out",
+    "title": "الدخول والخروج (Sign-in/Sign-out)",
+    "summary": "أوامر تسجيل الدخول والخروج ومراقبة مجالات العمل.",
+    "content": [
+      "JI0001AA/SU — تسجيل دخول مجال واحد",
+      "JI*0001AA/SU — تسجيل دخول لكل المجالات",
+      "JO / JO* — خروج من مجال واحد أو جميع المجالات",
+      "JD — عرض حالة مجالات العمل",
+      "JMB — الانتقال بين المجالات"
+    ],
+    "relatedCommands": ["JI0001AA/SU", "JI*0001AA/SU", "JO", "JO*", "JD", "JMB"]
+  },
+  {
+    "id": "screen-control",
+    "title": "التحكم في الشاشة",
+    "summary": "أوامر التنقل في المخرجات الطويلة.",
+    "content": [
+      "MD للنزول، MU للصعود، MB لأقصى الأسفل، MT لأقصى الأعلى",
+      "IG لتجاهل التغييرات والرجوع"
+    ],
+    "relatedCommands": ["MD", "MU", "MB", "MT", "IG"]
+  },
+  {
+    "id": "pnr-mandatory",
+    "title": "إنشاء PNR (العناصر الإلزامية)",
+    "summary": "العناصر الأساسية SS، NM، AP، TK، RF، ER/ET.",
+    "content": [
+      "SS لبيع القطاع",
+      "NM لإدخال الأسماء",
+      "AP/APE لوسائل الاتصال",
+      "TKOK أو TKTL للترتيب",
+      "RF ثم ER/ET للحفظ"
+    ],
+    "relatedCommands": ["SS", "NM", "AP", "APE", "TKOK", "TKTL/DDMMM", "RF", "ER", "ET"]
+  },
+  {
+    "id": "pricing-ticketing",
+    "title": "التسعير والإصدار",
+    "summary": "أوامر FX* للتسعير وTTP لإصدار التذاكر.",
+    "content": [
+      "FXP للتسعير وإنشاء TST",
+      "FXX للتسعير الاستعلامي",
+      "FXR لإعادة التسعير بعد تعديل",
+      "FXG/FXH لتسعير الخدمات الإضافية",
+      "TTP/RT لإصدار التذاكر وإعادة العرض"
+    ],
+    "relatedCommands": ["FXP", "FXX", "FXR", "FXH", "FXG", "TTP", "TTP/RT", "TTM", "TWD"]
+  },
+  {
+    "id": "queues",
+    "title": "الطوابير (Queues)",
+    "summary": "أوامر إدارة الطوابير ومتابعة الحجوزات العالقة.",
+    "content": [
+      "QT/QTQ ملخص الطوابير",
+      "QV/40C40 لعرض قائمة",
+      "QS10C1 للدخول للطابور",
+      "QN للحجز التالي، QE/10C1 لإنهاء الطابور"
+    ],
+    "relatedCommands": ["QT", "QTQ", "QV/40C40", "QS10C1", "QN", "QE/10C1", "QI", "QF"]
+  }
+]

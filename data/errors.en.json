@@ -1,0 +1,23 @@
+[
+  {
+    "error": "NEED TICKETING ARGUMENTS",
+    "meaning": "Ticketing element missing or incomplete.",
+    "solution": ["Add ticketing arrangement TKOK or TKTL/DDMMM", "Reprice if needed then retry issuance (TTP)."],
+    "relatedCommands": ["TKOK", "TKTL/DDMMM", "TTP"],
+    "keywords": ["ticketing", "TK", "arrangement"]
+  },
+  {
+    "error": "SIMULTANEOUS CHANGES",
+    "meaning": "Record changed elsewhere; your screen is stale.",
+    "solution": ["Ignore changes (IG)", "Retrieve again (RT)", "Reapply your edits."],
+    "relatedCommands": ["IG", "RT"],
+    "keywords": ["conflict", "stale", "concurrent"]
+  },
+  {
+    "error": "NEED TEST",
+    "meaning": "Pricing/TST missing for action requested.",
+    "solution": ["Price with FXP or FXX", "Re-attempt the action."],
+    "relatedCommands": ["FXP", "FXX"],
+    "keywords": ["pricing", "tst", "fare"]
+  }
+]

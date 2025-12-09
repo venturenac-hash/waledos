@@ -1,0 +1,23 @@
+[
+  {
+    "error": "NEED TICKETING ARGUMENTS",
+    "meaning": "عنصر التذاكر مفقود أو غير مكتمل.",
+    "solution": ["أضف ترتيب تذاكر TKOK أو TKTL/DDMMM", "أعد التسعير إذا لزم ثم أعد المحاولة (TTP)."],
+    "relatedCommands": ["TKOK", "TKTL/DDMMM", "TTP"],
+    "keywords": ["تذاكر", "TK", "ترتيب"]
+  },
+  {
+    "error": "SIMULTANEOUS CHANGES",
+    "meaning": "تم تعديل الحجز في مكان آخر؛ الشاشة قديمة.",
+    "solution": ["IG لتجاهل التغييرات", "RT لاسترجاع الحجز مجدداً", "أعد تطبيق التعديلات."],
+    "relatedCommands": ["IG", "RT"],
+    "keywords": ["تعارض", "تعديل متزامن"]
+  },
+  {
+    "error": "NEED TEST",
+    "meaning": "التسعير/TST مفقود للعملية المطلوبة.",
+    "solution": ["سعّر بـ FXP أو FXX", "أعد المحاولة بعد التسعير."],
+    "relatedCommands": ["FXP", "FXX"],
+    "keywords": ["تسعير", "TST", "Fare"]
+  }
+]

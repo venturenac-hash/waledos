@@ -1,0 +1,11 @@
+[
+  { "code": "O", "label": "Open", "description": "Coupon is open and valid for use." },
+  { "code": "A", "label": "Airport Control", "description": "Under airport control (typically during check-in/boarding)." },
+  { "code": "F", "label": "Flown", "description": "Coupon has been used/flown." },
+  { "code": "E", "label": "Exchanged", "description": "Coupon exchanged for a new ticket." },
+  { "code": "V", "label": "Void", "description": "Coupon voided and no longer valid." },
+  { "code": "S", "label": "Suspended", "description": "Coupon suspended and needs manual action." },
+  { "code": "Z", "label": "Closed", "description": "Coupon closed (completed or processed)." },
+  { "code": "U", "label": "Unused", "description": "Coupon not used yet." },
+  { "code": "R", "label": "Refunded", "description": "Coupon refunded; value returned." }
+]

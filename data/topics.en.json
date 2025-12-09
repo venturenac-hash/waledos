@@ -1,0 +1,63 @@
+[
+  {
+    "id": "sign-in-out",
+    "title": "Sign-in / Sign-out",
+    "summary": "Entries to sign in/out and monitor work areas.",
+    "content": [
+      "JI0001AA/SU — sign into one area",
+      "JI*0001AA/SU — sign into all areas",
+      "JO / JO* — sign out one or all areas",
+      "JD — display work area status",
+      "JMB — move between areas"
+    ],
+    "relatedCommands": ["JI0001AA/SU", "JI*0001AA/SU", "JO", "JO*", "JD", "JMB"]
+  },
+  {
+    "id": "screen-control",
+    "title": "Screen control",
+    "summary": "Navigation in long outputs.",
+    "content": [
+      "MD down, MU up, MB bottom, MT top",
+      "IG to ignore changes and return"
+    ],
+    "relatedCommands": ["MD", "MU", "MB", "MT", "IG"]
+  },
+  {
+    "id": "pnr-mandatory",
+    "title": "PNR mandatory elements",
+    "summary": "Core elements SS, NM, AP, TK, RF, ER/ET.",
+    "content": [
+      "SS to sell",
+      "NM to add names",
+      "AP/APE for contacts",
+      "TKOK or TKTL for ticketing arrangement",
+      "RF then ER/ET to save"
+    ],
+    "relatedCommands": ["SS", "NM", "AP", "APE", "TKOK", "TKTL/DDMMM", "RF", "ER", "ET"]
+  },
+  {
+    "id": "pricing-ticketing",
+    "title": "Pricing & ticketing",
+    "summary": "FX* for pricing, TTP for issuance.",
+    "content": [
+      "FXP to price/store TST",
+      "FXX for informative pricing",
+      "FXR to reprice after changes",
+      "FXG/FXH to price ancillaries",
+      "TTP/RT to issue and redisplay"
+    ],
+    "relatedCommands": ["FXP", "FXX", "FXR", "FXH", "FXG", "TTP", "TTP/RT", "TTM", "TWD"]
+  },
+  {
+    "id": "queues",
+    "title": "Queues",
+    "summary": "Manage queues and pending PNRs.",
+    "content": [
+      "QT/QTQ queue summaries",
+      "QV/40C40 to view a queue list",
+      "QS10C1 to enter a queue",
+      "QN for next, QE/10C1 to end queue"
+    ],
+    "relatedCommands": ["QT", "QTQ", "QV/40C40", "QS10C1", "QN", "QE/10C1", "QI", "QF"]
+  }
+]
